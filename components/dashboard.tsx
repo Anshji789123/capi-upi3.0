@@ -64,6 +64,14 @@ interface Transaction {
   type?: string
 }
 
+interface Notification {
+  id: string
+  type: 'debit' | 'credit'
+  amount: number
+  cardId?: string
+  timestamp: number
+}
+
 interface DashboardProps {
   onLogout: () => void
 }
