@@ -172,6 +172,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
         if (doc.exists()) {
           const data = doc.data() as UserData
           console.log("Real-time user data update:", data)
+
+          // Check for balance increase (incoming credit)
+          if (userData && data.balance > userData.balance) {
+            const creditAmount = data.balance - userData.balance
+            addNotification('credit', creditAmount)
+          }
+
           setUserData(data)
         }
       },
@@ -439,7 +446,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
         setNewPin('')
         setConfirmPin('')
         setPinMessage('')
-        setMessage("🔒 PIN created successfully! Your payments are now secure.")
+        setMessage("���� PIN created successfully! Your payments are now secure.")
       } catch (error) {
         console.error("PIN setup error:", error)
         setPinMessage("❌ Failed to create PIN. Please try again.")
