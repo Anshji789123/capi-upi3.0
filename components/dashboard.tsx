@@ -281,7 +281,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       })
 
       setShowPayLaterForm(false)
-      setMessage(`�� Congratulations! You've been pre-approved for ₹${approvedLimit.toLocaleString()} Pay Later limit.`)
+      setMessage(`🎉 Congratulations! You've been pre-approved for ₹${approvedLimit.toLocaleString()} Pay Later limit.`)
 
       // Clear form
       setIncome("")
@@ -299,78 +299,39 @@ export function Dashboard({ onLogout }: DashboardProps) {
     e.preventDefault()
     if (!userData || !auth.currentUser) return
 
-    setLoading(true)
-    setMessage("")
+    const amount = Number.parseFloat(payLaterAmount)
+    const availableLimit = (userData.payLaterLimit || 0) - (userData.payLaterUsed || 0)
 
-    try {
-      const amount = Number.parseFloat(payLaterAmount)
-      const availableLimit = (userData.payLaterLimit || 0) - (userData.payLaterUsed || 0)
-
-      console.log("Pay Later payment:", { amount, availableLimit, recipientCardId })
-
-      if (amount <= 0) {
-        setMessage("❌ Please enter a valid amount")
-        return
-      }
-
-      if (amount > availableLimit) {
-        setMessage(`❌ Amount exceeds available Pay Later limit of ₹${availableLimit.toLocaleString()}`)
-        return
-      }
-
-      if (!recipientCardId.trim()) {
-        setMessage("❌ Please enter recipient Card ID")
-        return
-      }
-
-      // Find recipient by card ID
-      const usersRef = collection(db, "users")
-      const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
-      const querySnapshot = await getDocs(q)
-
-      if (querySnapshot.empty) {
-        setMessage("❌ Recipient Card ID not found")
-        return
-      }
-
-      const recipientDoc = querySnapshot.docs[0]
-      const recipientData = recipientDoc.data()
-
-      console.log("Recipient found:", recipientData.name)
-
-      // Update sender Pay Later used amount
-      const newPayLaterUsed = (userData.payLaterUsed || 0) + amount
-      await updateDoc(doc(db, "users", auth.currentUser.uid), {
-        payLaterUsed: newPayLaterUsed,
-      })
-
-      // Update recipient balance
-      const newRecipientBalance = recipientData.balance + amount
-      await updateDoc(doc(db, "users", recipientDoc.id), {
-        balance: newRecipientBalance,
-      })
-
-      // Create transaction record
-      await addDoc(collection(db, "transactions"), {
-        senderId: auth.currentUser.uid,
-        senderCardId: userData.cardId,
-        recipientId: recipientDoc.id,
-        recipientCardId: recipientCardId.trim(),
-        amount: amount,
-        timestamp: new Date().toISOString(),
-        status: "completed",
-        type: "pay_later",
-      })
-
-      setPayLaterAmount("")
-      setRecipientCardId("")
-      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} using Pay Later to @${recipientCardId}`)
-    } catch (error) {
-      console.error("Pay Later payment error:", error)
-      setMessage("❌ Payment failed. Please try again.")
-    } finally {
-      setLoading(false)
+    if (amount <= 0) {
+      setMessage("❌ Please enter a valid amount")
+      return
     }
+
+    if (amount > availableLimit) {
+      setMessage(`❌ Amount exceeds available Pay Later limit of ₹${availableLimit.toLocaleString()}`)
+      return
+    }
+
+    if (!recipientCardId.trim()) {
+      setMessage("❌ Please enter recipient Card ID")
+      return
+    }
+
+    // Check if PIN is set up
+    if (!userData.pin) {
+      setMessage("❌ Please set up a PIN first for secure payments")
+      setShowPinSetup(true)
+      return
+    }
+
+    // Set pending payment and show PIN verification
+    setPendingPayment({
+      type: 'payLater',
+      amount,
+      recipientCardId: recipientCardId.trim()
+    })
+    setShowPinVerification(true)
+    setMessage("")
   }
 
   const handleRegularPayment = async (e: React.FormEvent) => {
