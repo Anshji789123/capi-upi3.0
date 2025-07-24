@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { SimplePinInput } from "@/components/simple-pin-input"
+// import { SimplePinInput } from "@/components/simple-pin-input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import {
   CreditCard,
@@ -720,7 +720,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                         <p className="text-green-400 font-bold text-xl">
                           {balanceVisible
                             ? `₹${((userData.payLaterLimit || 0) - (userData.payLaterUsed || 0)).toLocaleString()}`
-                            : "•••���••"}
+                            : "••••••"}
                         </p>
                       </div>
                     )}
