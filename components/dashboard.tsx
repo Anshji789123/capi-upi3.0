@@ -734,9 +734,22 @@ export function Dashboard({ onLogout }: DashboardProps) {
                   <Send className="h-4 w-4 mr-2" />
                   Quick Pay
                 </Button>
-                <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-800 bg-transparent">
-                  <Gift className="h-4 w-4 mr-2" />
-                  Rewards
+                <Button
+                  variant="outline"
+                  className="border-gray-600 text-white hover:bg-gray-800 bg-transparent"
+                  onClick={() => setShowPinSetup(true)}
+                >
+                  {userData.pin ? (
+                    <>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Change PIN
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="h-4 w-4 mr-2" />
+                      Setup PIN
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
