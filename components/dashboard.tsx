@@ -1150,13 +1150,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
               <p className="text-sm text-gray-400 mb-4">
                 {pinSetupStep === 'create' ? 'Enter your new PIN' : 'Confirm your PIN'}
               </p>
-              {/* <PinInput
+              <SimplePinInput
                 onComplete={pinSetupStep === 'create' ? setNewPin : setConfirmPin}
                 value={pinSetupStep === 'create' ? newPin : confirmPin}
                 onChange={pinSetupStep === 'create' ? setNewPin : setConfirmPin}
-                className="mb-4"
-              /> */}
-              <div className="text-gray-400">PIN component temporarily disabled for debugging</div>
+              />
             </div>
 
             {pinMessage && (
