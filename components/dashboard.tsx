@@ -575,6 +575,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
       setPayLaterAmount("")
       setRecipientCardId("")
       setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} using Pay Later to @${recipientCardId}`)
+
+      // Add notification for sender (Pay Later debit)
+      addNotification('debit', amount, recipientCardId.trim())
     } catch (error) {
       console.error("Pay Later payment error:", error)
       setMessage("❌ Payment failed. Please try again.")
