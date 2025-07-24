@@ -392,6 +392,23 @@ export function Dashboard({ onLogout }: DashboardProps) {
     document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
   }
 
+  const addNotification = (type: 'debit' | 'credit', amount: number, cardId?: string) => {
+    const notification: Notification = {
+      id: Date.now().toString(),
+      type,
+      amount,
+      cardId,
+      timestamp: Date.now()
+    }
+
+    setNotifications(prev => [notification, ...prev.slice(0, 4)]) // Keep only last 5 notifications
+
+    // Auto-remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== notification.id))
+    }, 5000)
+  }
+
   const handlePinSetup = async () => {
     if (!userData || !auth.currentUser) return
 
