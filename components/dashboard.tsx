@@ -516,7 +516,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       setPaymentAmount("")
       setRecipientCardId("")
-      setMessage(`�� Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
+      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
+
+      // Add notification for sender (debit)
+      addNotification('debit', amount, recipientCardId.trim())
     } catch (error) {
       console.error("Regular payment error:", error)
       setMessage("❌ Payment failed. Please try again.")
