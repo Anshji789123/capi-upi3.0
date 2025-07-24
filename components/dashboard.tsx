@@ -88,6 +88,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("send")
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [dataLoading, setDataLoading] = useState(true)
+  const [notifications, setNotifications] = useState<Notification[]>([])
 
   // PIN related states
   const [showPinSetup, setShowPinSetup] = useState(false)
