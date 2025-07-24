@@ -457,6 +457,177 @@ export function Dashboard({ onLogout }: DashboardProps) {
     document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
   }
 
+  const handlePinSetup = async () => {
+    if (!userData || !auth.currentUser) return
+
+    if (pinSetupStep === 'create') {
+      if (newPin.length !== 4) {
+        setPinMessage("❌ PIN must be 4 digits")
+        return
+      }
+      setPinSetupStep('confirm')
+      setPinMessage('')
+    } else {
+      if (confirmPin !== newPin) {
+        setPinMessage("❌ PINs do not match. Please try again.")
+        setConfirmPin('')
+        setPinSetupStep('create')
+        setNewPin('')
+        return
+      }
+
+      try {
+        await updateDoc(doc(db, "users", auth.currentUser.uid), {
+          pin: newPin,
+          pinCreatedAt: new Date().toISOString(),
+        })
+
+        setShowPinSetup(false)
+        setPinSetupStep('create')
+        setNewPin('')
+        setConfirmPin('')
+        setPinMessage('')
+        setMessage("🔒 PIN created successfully! Your payments are now secure.")
+      } catch (error) {
+        console.error("PIN setup error:", error)
+        setPinMessage("❌ Failed to create PIN. Please try again.")
+      }
+    }
+  }
+
+  const handlePinVerification = async (pin: string) => {
+    if (!userData || !pendingPayment) return
+
+    if (pin !== userData.pin) {
+      setPinMessage("❌ Incorrect PIN. Please try again.")
+      setVerifyPin('')
+      return
+    }
+
+    setShowPinVerification(false)
+    setVerifyPin('')
+    setPinMessage('')
+
+    // Execute the pending payment
+    if (pendingPayment.type === 'regular') {
+      await executeRegularPayment(pendingPayment.amount, pendingPayment.recipientCardId)
+    } else {
+      await executePayLaterPayment(pendingPayment.amount, pendingPayment.recipientCardId)
+    }
+
+    setPendingPayment(null)
+  }
+
+  const executeRegularPayment = async (amount: number, recipientCardId: string) => {
+    if (!userData || !auth.currentUser) return
+
+    setLoading(true)
+    setMessage("")
+
+    try {
+      // Find recipient by card ID
+      const usersRef = collection(db, "users")
+      const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        setMessage("❌ Recipient Card ID not found")
+        return
+      }
+
+      const recipientDoc = querySnapshot.docs[0]
+      const recipientData = recipientDoc.data()
+
+      // Update sender balance
+      const newSenderBalance = userData.balance - amount
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        balance: newSenderBalance,
+      })
+
+      // Update recipient balance
+      const newRecipientBalance = recipientData.balance + amount
+      await updateDoc(doc(db, "users", recipientDoc.id), {
+        balance: newRecipientBalance,
+      })
+
+      // Create transaction record
+      await addDoc(collection(db, "transactions"), {
+        senderId: auth.currentUser.uid,
+        senderCardId: userData.cardId,
+        recipientId: recipientDoc.id,
+        recipientCardId: recipientCardId.trim(),
+        amount: amount,
+        timestamp: new Date().toISOString(),
+        status: "completed",
+        type: "regular",
+      })
+
+      setPaymentAmount("")
+      setRecipientCardId("")
+      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
+    } catch (error) {
+      console.error("Regular payment error:", error)
+      setMessage("❌ Payment failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const executePayLaterPayment = async (amount: number, recipientCardId: string) => {
+    if (!userData || !auth.currentUser) return
+
+    setLoading(true)
+    setMessage("")
+
+    try {
+      // Find recipient by card ID
+      const usersRef = collection(db, "users")
+      const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        setMessage("❌ Recipient Card ID not found")
+        return
+      }
+
+      const recipientDoc = querySnapshot.docs[0]
+      const recipientData = recipientDoc.data()
+
+      // Update sender Pay Later used amount
+      const newPayLaterUsed = (userData.payLaterUsed || 0) + amount
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        payLaterUsed: newPayLaterUsed,
+      })
+
+      // Update recipient balance
+      const newRecipientBalance = recipientData.balance + amount
+      await updateDoc(doc(db, "users", recipientDoc.id), {
+        balance: newRecipientBalance,
+      })
+
+      // Create transaction record
+      await addDoc(collection(db, "transactions"), {
+        senderId: auth.currentUser.uid,
+        senderCardId: userData.cardId,
+        recipientId: recipientDoc.id,
+        recipientCardId: recipientCardId.trim(),
+        amount: amount,
+        timestamp: new Date().toISOString(),
+        status: "completed",
+        type: "pay_later",
+      })
+
+      setPayLaterAmount("")
+      setRecipientCardId("")
+      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} using Pay Later to @${recipientCardId}`)
+    } catch (error) {
+      console.error("Pay Later payment error:", error)
+      setMessage("❌ Payment failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
