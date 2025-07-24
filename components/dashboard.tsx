@@ -324,7 +324,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
 
     if (amount > availableLimit) {
-      setMessage(`❌ Amount exceeds available Pay Later limit of ₹${availableLimit.toLocaleString()}`)
+      setMessage(`❌ Amount exceeds available Pay Later limit of ��${availableLimit.toLocaleString()}`)
       return
     }
 
@@ -649,6 +649,45 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </div>
         </div>
       </header>
+
+      {/* Notifications */}
+      {notifications.length > 0 && (
+        <div className="fixed top-20 right-4 z-50 space-y-2">
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`p-4 rounded-lg shadow-lg border backdrop-blur-md transform transition-all duration-300 ease-in-out ${
+                notification.type === 'credit'
+                  ? 'bg-green-900/90 border-green-700 text-green-100'
+                  : 'bg-red-900/90 border-red-700 text-red-100'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  notification.type === 'credit' ? 'bg-green-600' : 'bg-red-600'
+                }`}>
+                  {notification.type === 'credit' ? (
+                    <Plus className="h-4 w-4 text-white" />
+                  ) : (
+                    <Send className="h-4 w-4 text-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold">
+                    {notification.type === 'credit' ? 'Money Received!' : 'Money Sent!'}
+                  </p>
+                  <p className="text-sm opacity-90">
+                    {notification.type === 'credit'
+                      ? `₹${notification.amount.toLocaleString()} credited to your account`
+                      : `₹${notification.amount.toLocaleString()} sent to @${notification.cardId}`
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="container mx-auto px-4 py-8">
         {/* Quick Stats */}
