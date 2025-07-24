@@ -281,7 +281,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       })
 
       setShowPayLaterForm(false)
-      setMessage(`🎉 Congratulations! You've been pre-approved for ₹${approvedLimit.toLocaleString()} Pay Later limit.`)
+      setMessage(`�� Congratulations! You've been pre-approved for ₹${approvedLimit.toLocaleString()} Pay Later limit.`)
 
       // Clear form
       setIncome("")
@@ -377,73 +377,38 @@ export function Dashboard({ onLogout }: DashboardProps) {
     e.preventDefault()
     if (!userData || !auth.currentUser) return
 
-    setLoading(true)
-    setMessage("")
+    const amount = Number.parseFloat(paymentAmount)
 
-    try {
-      const amount = Number.parseFloat(paymentAmount)
-
-      if (amount <= 0) {
-        setMessage("❌ Please enter a valid amount")
-        return
-      }
-
-      if (amount > userData.balance) {
-        setMessage("❌ Insufficient balance")
-        return
-      }
-
-      if (!recipientCardId.trim()) {
-        setMessage("❌ Please enter recipient Card ID")
-        return
-      }
-
-      // Find recipient by card ID
-      const usersRef = collection(db, "users")
-      const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
-      const querySnapshot = await getDocs(q)
-
-      if (querySnapshot.empty) {
-        setMessage("❌ Recipient Card ID not found")
-        return
-      }
-
-      const recipientDoc = querySnapshot.docs[0]
-      const recipientData = recipientDoc.data()
-
-      // Update sender balance
-      const newSenderBalance = userData.balance - amount
-      await updateDoc(doc(db, "users", auth.currentUser.uid), {
-        balance: newSenderBalance,
-      })
-
-      // Update recipient balance
-      const newRecipientBalance = recipientData.balance + amount
-      await updateDoc(doc(db, "users", recipientDoc.id), {
-        balance: newRecipientBalance,
-      })
-
-      // Create transaction record
-      await addDoc(collection(db, "transactions"), {
-        senderId: auth.currentUser.uid,
-        senderCardId: userData.cardId,
-        recipientId: recipientDoc.id,
-        recipientCardId: recipientCardId.trim(),
-        amount: amount,
-        timestamp: new Date().toISOString(),
-        status: "completed",
-        type: "regular",
-      })
-
-      setPaymentAmount("")
-      setRecipientCardId("")
-      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
-    } catch (error) {
-      console.error("Regular payment error:", error)
-      setMessage("❌ Payment failed. Please try again.")
-    } finally {
-      setLoading(false)
+    if (amount <= 0) {
+      setMessage("❌ Please enter a valid amount")
+      return
     }
+
+    if (amount > userData.balance) {
+      setMessage("❌ Insufficient balance")
+      return
+    }
+
+    if (!recipientCardId.trim()) {
+      setMessage("❌ Please enter recipient Card ID")
+      return
+    }
+
+    // Check if PIN is set up
+    if (!userData.pin) {
+      setMessage("❌ Please set up a PIN first for secure payments")
+      setShowPinSetup(true)
+      return
+    }
+
+    // Set pending payment and show PIN verification
+    setPendingPayment({
+      type: 'regular',
+      amount,
+      recipientCardId: recipientCardId.trim()
+    })
+    setShowPinVerification(true)
+    setMessage("")
   }
 
   const handleLogout = async () => {
