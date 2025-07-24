@@ -32,9 +32,7 @@ import {
   Bell,
   Eye,
   EyeOff,
-  Lock,
-  Unlock,
-  KeyRound,
+
 } from "lucide-react"
 
 interface UserData {
@@ -653,7 +651,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
             <CardContent className="p-4 text-center">
               <Wallet className="h-8 w-8 text-blue-400 mx-auto mb-2" />
               <p className="text-blue-400 text-sm font-medium">Balance</p>
-              <p className="text-white text-xl font-bold">���{userData.balance.toLocaleString()}</p>
+              <p className="text-white text-xl font-bold">₹{userData.balance.toLocaleString()}</p>
             </CardContent>
           </Card>
 
