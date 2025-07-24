@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-// import { PinInput } from "@/components/pin-input"
+import { PinInput } from "@/components/pin-input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import {
   CreditCard,
@@ -490,7 +490,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       setPaymentAmount("")
       setRecipientCardId("")
-      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
+      setMessage(`�� Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
     } catch (error) {
       console.error("Regular payment error:", error)
       setMessage("❌ Payment failed. Please try again.")
