@@ -79,19 +79,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [dataLoading, setDataLoading] = useState(true)
 
-  // PIN related states
-  const [showPinSetup, setShowPinSetup] = useState(false)
-  const [showPinVerification, setShowPinVerification] = useState(false)
-  const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
-  const [newPin, setNewPin] = useState('')
-  const [confirmPin, setConfirmPin] = useState('')
-  const [verifyPin, setVerifyPin] = useState('')
-  const [pinMessage, setPinMessage] = useState('')
-  const [pendingPayment, setPendingPayment] = useState<{
-    type: 'regular' | 'payLater'
-    amount: number
-    recipientCardId: string
-  } | null>(null)
+  // PIN related states temporarily removed for debugging
 
   // Pay Later form states
   const [showPayLaterForm, setShowPayLaterForm] = useState(false)
