@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PinInput } from "@/components/pin-input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import {
   CreditCard,
   Send,
@@ -30,6 +32,9 @@ import {
   Bell,
   Eye,
   EyeOff,
+  Lock,
+  Unlock,
+  KeyRound,
 } from "lucide-react"
 
 interface UserData {
@@ -43,6 +48,8 @@ interface UserData {
   profession?: string
   age?: number
   joinedAt?: string
+  pin?: string
+  pinCreatedAt?: string
 }
 
 interface Transaction {
@@ -73,6 +80,20 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("send")
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [dataLoading, setDataLoading] = useState(true)
+
+  // PIN related states
+  const [showPinSetup, setShowPinSetup] = useState(false)
+  const [showPinVerification, setShowPinVerification] = useState(false)
+  const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [verifyPin, setVerifyPin] = useState('')
+  const [pinMessage, setPinMessage] = useState('')
+  const [pendingPayment, setPendingPayment] = useState<{
+    type: 'regular' | 'payLater'
+    amount: number
+    recipientCardId: string
+  } | null>(null)
 
   // Pay Later form states
   const [showPayLaterForm, setShowPayLaterForm] = useState(false)
