@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-// import { SimplePinInput } from "@/components/simple-pin-input"
-// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { PinInput } from "@/components/pin-input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import {
   CreditCard,
   Send,
@@ -32,7 +32,9 @@ import {
   Bell,
   Eye,
   EyeOff,
-
+  Lock,
+  Unlock,
+  KeyRound,
 } from "lucide-react"
 
 interface UserData {
@@ -79,7 +81,19 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [dataLoading, setDataLoading] = useState(true)
 
-  // PIN related states temporarily removed for debugging
+  // PIN related states
+  const [showPinSetup, setShowPinSetup] = useState(false)
+  const [showPinVerification, setShowPinVerification] = useState(false)
+  const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [verifyPin, setVerifyPin] = useState('')
+  const [pinMessage, setPinMessage] = useState('')
+  const [pendingPayment, setPendingPayment] = useState<{
+    type: 'regular' | 'payLater'
+    amount: number
+    recipientCardId: string
+  } | null>(null)
 
   // Pay Later form states
   const [showPayLaterForm, setShowPayLaterForm] = useState(false)
@@ -324,73 +338,38 @@ export function Dashboard({ onLogout }: DashboardProps) {
     e.preventDefault()
     if (!userData || !auth.currentUser) return
 
-    setLoading(true)
-    setMessage("")
+    const amount = Number.parseFloat(paymentAmount)
 
-    try {
-      const amount = Number.parseFloat(paymentAmount)
-
-      if (amount <= 0) {
-        setMessage("❌ Please enter a valid amount")
-        return
-      }
-
-      if (amount > userData.balance) {
-        setMessage("❌ Insufficient balance")
-        return
-      }
-
-      if (!recipientCardId.trim()) {
-        setMessage("❌ Please enter recipient Card ID")
-        return
-      }
-
-      // Find recipient by card ID
-      const usersRef = collection(db, "users")
-      const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
-      const querySnapshot = await getDocs(q)
-
-      if (querySnapshot.empty) {
-        setMessage("❌ Recipient Card ID not found")
-        return
-      }
-
-      const recipientDoc = querySnapshot.docs[0]
-      const recipientData = recipientDoc.data()
-
-      // Update sender balance
-      const newSenderBalance = userData.balance - amount
-      await updateDoc(doc(db, "users", auth.currentUser.uid), {
-        balance: newSenderBalance,
-      })
-
-      // Update recipient balance
-      const newRecipientBalance = recipientData.balance + amount
-      await updateDoc(doc(db, "users", recipientDoc.id), {
-        balance: newRecipientBalance,
-      })
-
-      // Create transaction record
-      await addDoc(collection(db, "transactions"), {
-        senderId: auth.currentUser.uid,
-        senderCardId: userData.cardId,
-        recipientId: recipientDoc.id,
-        recipientCardId: recipientCardId.trim(),
-        amount: amount,
-        timestamp: new Date().toISOString(),
-        status: "completed",
-        type: "regular",
-      })
-
-      setPaymentAmount("")
-      setRecipientCardId("")
-      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
-    } catch (error) {
-      console.error("Regular payment error:", error)
-      setMessage("❌ Payment failed. Please try again.")
-    } finally {
-      setLoading(false)
+    if (amount <= 0) {
+      setMessage("❌ Please enter a valid amount")
+      return
     }
+
+    if (amount > userData.balance) {
+      setMessage("❌ Insufficient balance")
+      return
+    }
+
+    if (!recipientCardId.trim()) {
+      setMessage("❌ Please enter recipient Card ID")
+      return
+    }
+
+    // Check if PIN is set up
+    if (!userData.pin) {
+      setMessage("❌ Please set up a PIN first for secure payments")
+      setShowPinSetup(true)
+      return
+    }
+
+    // Set pending payment and show PIN verification
+    setPendingPayment({
+      type: 'regular',
+      amount,
+      recipientCardId: recipientCardId.trim()
+    })
+    setShowPinVerification(true)
+    setMessage("")
   }
 
   const handleLogout = async () => {
@@ -755,9 +734,22 @@ export function Dashboard({ onLogout }: DashboardProps) {
                   <Send className="h-4 w-4 mr-2" />
                   Quick Pay
                 </Button>
-                <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-800 bg-transparent">
-                  <Gift className="h-4 w-4 mr-2" />
-                  Rewards
+                <Button
+                  variant="outline"
+                  className="border-gray-600 text-white hover:bg-gray-800 bg-transparent"
+                  onClick={() => setShowPinSetup(true)}
+                >
+                  {userData.pin ? (
+                    <>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Change PIN
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="h-4 w-4 mr-2" />
+                      Setup PIN
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -1138,7 +1130,128 @@ export function Dashboard({ onLogout }: DashboardProps) {
         </Card>
       </div>
 
-      {/* PIN functionality temporarily disabled for debugging */}
+      {/* PIN Setup Dialog */}
+      <Dialog open={showPinSetup} onOpenChange={setShowPinSetup}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <KeyRound className="h-5 w-5 mr-2" />
+              {userData?.pin ? 'Change PIN' : 'Setup PIN'}
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {pinSetupStep === 'create'
+                ? 'Create a 4-digit PIN to secure your payments'
+                : 'Confirm your PIN by entering it again'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-4">
+                {pinSetupStep === 'create' ? 'Enter your new PIN' : 'Confirm your PIN'}
+              </p>
+              <PinInput
+                onComplete={pinSetupStep === 'create' ? setNewPin : setConfirmPin}
+                value={pinSetupStep === 'create' ? newPin : confirmPin}
+                onChange={pinSetupStep === 'create' ? setNewPin : setConfirmPin}
+                className="mb-4"
+              />
+            </div>
+
+            {pinMessage && (
+              <div className={`p-3 rounded text-center ${
+                pinMessage.includes('❌')
+                  ? 'bg-red-900/50 text-red-300 border border-red-700'
+                  : 'bg-green-900/50 text-green-300 border border-green-700'
+              }`}>
+                {pinMessage}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handlePinSetup}
+                disabled={pinSetupStep === 'create' ? newPin.length !== 4 : confirmPin.length !== 4}
+                className="flex-1 bg-white text-black hover:bg-gray-200"
+              >
+                {pinSetupStep === 'create' ? 'Continue' : 'Confirm PIN'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowPinSetup(false)
+                  setPinSetupStep('create')
+                  setNewPin('')
+                  setConfirmPin('')
+                  setPinMessage('')
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* PIN Verification Dialog */}
+      <Dialog open={showPinVerification} onOpenChange={() => {
+        setShowPinVerification(false)
+        setPendingPayment(null)
+        setVerifyPin('')
+        setPinMessage('')
+      }}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              Verify PIN
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter your PIN to authorize this payment of ₹{pendingPayment?.amount.toLocaleString()} to @{pendingPayment?.recipientCardId}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-4">Enter your 4-digit PIN</p>
+              <PinInput
+                onComplete={handlePinVerification}
+                value={verifyPin}
+                onChange={setVerifyPin}
+                className="mb-4"
+              />
+            </div>
+
+            {pinMessage && (
+              <div className="p-3 rounded text-center bg-red-900/50 text-red-300 border border-red-700">
+                {pinMessage}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={() => handlePinVerification(verifyPin)}
+                disabled={verifyPin.length !== 4 || loading}
+                className="flex-1 bg-white text-black hover:bg-gray-200"
+              >
+                {loading ? 'Processing...' : 'Authorize Payment'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowPinVerification(false)
+                  setPendingPayment(null)
+                  setVerifyPin('')
+                  setPinMessage('')
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
