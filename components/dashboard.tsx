@@ -538,6 +538,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
   const quickPayUser = (cardId: string) => {
     setRecipientCardId(cardId)
+    setActiveTab("send")
+    // Auto scroll to payment form
+    document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const quickRequestUser = (cardId: string) => {
+    setRequestRecipientCardId(cardId)
+    setActiveTab("request")
     // Auto scroll to payment form
     document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
   }
