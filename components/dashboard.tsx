@@ -35,6 +35,10 @@ import {
   Lock,
   Unlock,
   KeyRound,
+  DollarSign,
+  CheckCircle,
+  XCircle,
+  ArrowDownLeft,
 } from "lucide-react"
 
 interface UserData {
@@ -72,6 +76,20 @@ interface Notification {
   timestamp: number
 }
 
+interface PaymentRequest {
+  id: string
+  requesterId: string
+  requesterCardId: string
+  requesterName: string
+  recipientId: string
+  recipientCardId: string
+  amount: number
+  message?: string
+  timestamp: string
+  status: 'pending' | 'approved' | 'declined'
+  type: 'payment_request'
+}
+
 interface DashboardProps {
   onLogout: () => void
 }
@@ -89,6 +107,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [dataLoading, setDataLoading] = useState(true)
   const [notifications, setNotifications] = useState<Notification[]>([])
+
+  // Payment request states
+  const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([])
+  const [requestAmount, setRequestAmount] = useState("")
+  const [requestRecipientCardId, setRequestRecipientCardId] = useState("")
+  const [requestMessage, setRequestMessage] = useState("")
+  const [pendingRequestApproval, setPendingRequestApproval] = useState<PaymentRequest | null>(null)
+  const [showRequestApproval, setShowRequestApproval] = useState(false)
 
   // PIN related states
   const [showPinSetup, setShowPinSetup] = useState(false)
@@ -852,6 +878,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 >
                   <Clock className="h-4 w-4 mr-2" />
                   Pay Later
+                </Button>
+                <Button
+                  variant={activeTab === "request" ? "default" : "ghost"}
+                  onClick={() => setActiveTab("request")}
+                  className={`flex-1 ${activeTab === "request" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Request
                 </Button>
               </div>
             </CardHeader>
