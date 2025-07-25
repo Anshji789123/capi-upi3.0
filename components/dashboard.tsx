@@ -1347,29 +1347,29 @@ export function Dashboard({ onLogout }: DashboardProps) {
           {/* Payment Section */}
           <Card className="border border-gray-700 bg-gray-900 lg:col-span-1" id="payment-section">
             <CardHeader>
-              <div className="flex space-x-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:space-x-2">
                 <Button
                   variant={activeTab === "send" ? "default" : "ghost"}
                   onClick={() => setActiveTab("send")}
-                  className={`flex-1 ${activeTab === "send" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
+                  className={`flex-1 text-xs sm:text-sm ${activeTab === "send" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
                 >
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Money
+                  <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Send
                 </Button>
                 <Button
                   variant={activeTab === "payLater" ? "default" : "ghost"}
                   onClick={() => setActiveTab("payLater")}
-                  className={`flex-1 ${activeTab === "payLater" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
+                  className={`flex-1 text-xs sm:text-sm ${activeTab === "payLater" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
                 >
-                  <Clock className="h-4 w-4 mr-2" />
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Pay Later
                 </Button>
                 <Button
                   variant={activeTab === "request" ? "default" : "ghost"}
                   onClick={() => setActiveTab("request")}
-                  className={`flex-1 ${activeTab === "request" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
+                  className={`flex-1 text-xs sm:text-sm ${activeTab === "request" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
                 >
-                  <DollarSign className="h-4 w-4 mr-2" />
+                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Request
                 </Button>
               </div>
