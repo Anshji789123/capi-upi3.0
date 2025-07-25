@@ -469,7 +469,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       })
 
       setShowPayLaterForm(false)
-      setMessage(`🎉 Congratulations! You've been pre-approved for ₹${approvedLimit.toLocaleString()} Pay Later limit.`)
+      setMessage(`Congratulations! You've been pre-approved for ₹${approvedLimit.toLocaleString()} Pay Later limit.`)
 
       // Clear form
       setIncome("")
