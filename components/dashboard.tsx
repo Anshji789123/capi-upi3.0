@@ -1532,16 +1532,29 @@ export function Dashboard({ onLogout }: DashboardProps) {
                           <p className="text-gray-400 text-sm font-mono">@{user.cardId}</p>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        className="bg-white text-black hover:bg-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          quickPayUser(user.cardId)
-                        }}
-                      >
-                        Pay
-                      </Button>
+                      <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          className="bg-white text-black hover:bg-gray-200"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            quickPayUser(user.cardId)
+                          }}
+                        >
+                          Pay
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            quickRequestUser(user.cardId)
+                          }}
+                        >
+                          Request
+                        </Button>
+                      </div>
                     </div>
                   ))
                 ) : (
