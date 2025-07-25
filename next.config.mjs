@@ -9,6 +9,19 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Permissions-Policy',
+            value: 'publickey-credentials-create=*, publickey-credentials-get=*',
+          },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig
