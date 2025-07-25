@@ -66,7 +66,6 @@ export function PaymentAuth({
     setAuthError("")
     setAuthMessage("Please authenticate using your fingerprint or face...")
     
-    const userId = "current-user" // Replace with actual user ID
     const result = await authenticateBiometric(userId)
     
     if (result.success) {
