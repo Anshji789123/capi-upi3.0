@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PinInput } from "@/components/pin-input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import {
   CreditCard,
   Send,
@@ -30,6 +32,9 @@ import {
   Bell,
   Eye,
   EyeOff,
+  Lock,
+  Unlock,
+  KeyRound,
 } from "lucide-react"
 
 interface UserData {
@@ -43,6 +48,8 @@ interface UserData {
   profession?: string
   age?: number
   joinedAt?: string
+  pin?: string
+  pinCreatedAt?: string
 }
 
 interface Transaction {
@@ -55,6 +62,14 @@ interface Transaction {
   timestamp: string
   status: string
   type?: string
+}
+
+interface Notification {
+  id: string
+  type: 'debit' | 'credit'
+  amount: number
+  cardId?: string
+  timestamp: number
 }
 
 interface DashboardProps {
@@ -73,6 +88,21 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("send")
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [dataLoading, setDataLoading] = useState(true)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+
+  // PIN related states
+  const [showPinSetup, setShowPinSetup] = useState(false)
+  const [showPinVerification, setShowPinVerification] = useState(false)
+  const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [verifyPin, setVerifyPin] = useState('')
+  const [pinMessage, setPinMessage] = useState('')
+  const [pendingPayment, setPendingPayment] = useState<{
+    type: 'regular' | 'payLater'
+    amount: number
+    recipientCardId: string
+  } | null>(null)
 
   // Pay Later form states
   const [showPayLaterForm, setShowPayLaterForm] = useState(false)
@@ -142,6 +172,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
         if (doc.exists()) {
           const data = doc.data() as UserData
           console.log("Real-time user data update:", data)
+
+          // Check for balance increase (incoming credit)
+          if (userData && data.balance > userData.balance) {
+            const creditAmount = data.balance - userData.balance
+            addNotification('credit', creditAmount)
+          }
+
           setUserData(data)
         }
       },
@@ -278,105 +315,175 @@ export function Dashboard({ onLogout }: DashboardProps) {
     e.preventDefault()
     if (!userData || !auth.currentUser) return
 
-    setLoading(true)
-    setMessage("")
+    const amount = Number.parseFloat(payLaterAmount)
+    const availableLimit = (userData.payLaterLimit || 0) - (userData.payLaterUsed || 0)
 
-    try {
-      const amount = Number.parseFloat(payLaterAmount)
-      const availableLimit = (userData.payLaterLimit || 0) - (userData.payLaterUsed || 0)
-
-      console.log("Pay Later payment:", { amount, availableLimit, recipientCardId })
-
-      if (amount <= 0) {
-        setMessage("❌ Please enter a valid amount")
-        return
-      }
-
-      if (amount > availableLimit) {
-        setMessage(`❌ Amount exceeds available Pay Later limit of ₹${availableLimit.toLocaleString()}`)
-        return
-      }
-
-      if (!recipientCardId.trim()) {
-        setMessage("❌ Please enter recipient Card ID")
-        return
-      }
-
-      // Find recipient by card ID
-      const usersRef = collection(db, "users")
-      const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
-      const querySnapshot = await getDocs(q)
-
-      if (querySnapshot.empty) {
-        setMessage("❌ Recipient Card ID not found")
-        return
-      }
-
-      const recipientDoc = querySnapshot.docs[0]
-      const recipientData = recipientDoc.data()
-
-      console.log("Recipient found:", recipientData.name)
-
-      // Update sender Pay Later used amount
-      const newPayLaterUsed = (userData.payLaterUsed || 0) + amount
-      await updateDoc(doc(db, "users", auth.currentUser.uid), {
-        payLaterUsed: newPayLaterUsed,
-      })
-
-      // Update recipient balance
-      const newRecipientBalance = recipientData.balance + amount
-      await updateDoc(doc(db, "users", recipientDoc.id), {
-        balance: newRecipientBalance,
-      })
-
-      // Create transaction record
-      await addDoc(collection(db, "transactions"), {
-        senderId: auth.currentUser.uid,
-        senderCardId: userData.cardId,
-        recipientId: recipientDoc.id,
-        recipientCardId: recipientCardId.trim(),
-        amount: amount,
-        timestamp: new Date().toISOString(),
-        status: "completed",
-        type: "pay_later",
-      })
-
-      setPayLaterAmount("")
-      setRecipientCardId("")
-      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} using Pay Later to @${recipientCardId}`)
-    } catch (error) {
-      console.error("Pay Later payment error:", error)
-      setMessage("❌ Payment failed. Please try again.")
-    } finally {
-      setLoading(false)
+    if (amount <= 0) {
+      setMessage("❌ Please enter a valid amount")
+      return
     }
+
+    if (amount > availableLimit) {
+      setMessage(`❌ Amount exceeds available Pay Later limit of ��${availableLimit.toLocaleString()}`)
+      return
+    }
+
+    if (!recipientCardId.trim()) {
+      setMessage("❌ Please enter recipient Card ID")
+      return
+    }
+
+    // Check if PIN is set up
+    if (!userData.pin) {
+      setMessage("❌ Please set up a PIN first for secure payments")
+      setShowPinSetup(true)
+      return
+    }
+
+    // Set pending payment and show PIN verification
+    setPendingPayment({
+      type: 'payLater',
+      amount,
+      recipientCardId: recipientCardId.trim()
+    })
+    setShowPinVerification(true)
+    setMessage("")
   }
 
   const handleRegularPayment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userData || !auth.currentUser) return
 
+    const amount = Number.parseFloat(paymentAmount)
+
+    if (amount <= 0) {
+      setMessage("❌ Please enter a valid amount")
+      return
+    }
+
+    if (amount > userData.balance) {
+      setMessage("❌ Insufficient balance")
+      return
+    }
+
+    if (!recipientCardId.trim()) {
+      setMessage("❌ Please enter recipient Card ID")
+      return
+    }
+
+    // Check if PIN is set up
+    if (!userData.pin) {
+      setMessage("❌ Please set up a PIN first for secure payments")
+      setShowPinSetup(true)
+      return
+    }
+
+    // Set pending payment and show PIN verification
+    setPendingPayment({
+      type: 'regular',
+      amount,
+      recipientCardId: recipientCardId.trim()
+    })
+    setShowPinVerification(true)
+    setMessage("")
+  }
+
+  const handleLogout = async () => {
+    await signOut(auth)
+    onLogout()
+  }
+
+  const quickPayUser = (cardId: string) => {
+    setRecipientCardId(cardId)
+    // Auto scroll to payment form
+    document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const addNotification = (type: 'debit' | 'credit', amount: number, cardId?: string) => {
+    const notification: Notification = {
+      id: Date.now().toString(),
+      type,
+      amount,
+      cardId,
+      timestamp: Date.now()
+    }
+
+    setNotifications(prev => [notification, ...prev.slice(0, 4)]) // Keep only last 5 notifications
+
+    // Auto-remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== notification.id))
+    }, 5000)
+  }
+
+  const handlePinSetup = async () => {
+    if (!userData || !auth.currentUser) return
+
+    if (pinSetupStep === 'create') {
+      if (newPin.length !== 4) {
+        setPinMessage("❌ PIN must be 4 digits")
+        return
+      }
+      setPinSetupStep('confirm')
+      setPinMessage('')
+    } else {
+      if (confirmPin !== newPin) {
+        setPinMessage("❌ PINs do not match. Please try again.")
+        setConfirmPin('')
+        setPinSetupStep('create')
+        setNewPin('')
+        return
+      }
+
+      try {
+        await updateDoc(doc(db, "users", auth.currentUser.uid), {
+          pin: newPin,
+          pinCreatedAt: new Date().toISOString(),
+        })
+
+        setShowPinSetup(false)
+        setPinSetupStep('create')
+        setNewPin('')
+        setConfirmPin('')
+        setPinMessage('')
+        setMessage("���� PIN created successfully! Your payments are now secure.")
+      } catch (error) {
+        console.error("PIN setup error:", error)
+        setPinMessage("❌ Failed to create PIN. Please try again.")
+      }
+    }
+  }
+
+  const handlePinVerification = async (pin: string) => {
+    if (!userData || !pendingPayment) return
+
+    if (pin !== userData.pin) {
+      setPinMessage("❌ Incorrect PIN. Please try again.")
+      setVerifyPin('')
+      return
+    }
+
+    setShowPinVerification(false)
+    setVerifyPin('')
+    setPinMessage('')
+
+    // Execute the pending payment
+    if (pendingPayment.type === 'regular') {
+      await executeRegularPayment(pendingPayment.amount, pendingPayment.recipientCardId)
+    } else {
+      await executePayLaterPayment(pendingPayment.amount, pendingPayment.recipientCardId)
+    }
+
+    setPendingPayment(null)
+  }
+
+  const executeRegularPayment = async (amount: number, recipientCardId: string) => {
+    if (!userData || !auth.currentUser) return
+
     setLoading(true)
     setMessage("")
 
     try {
-      const amount = Number.parseFloat(paymentAmount)
-
-      if (amount <= 0) {
-        setMessage("❌ Please enter a valid amount")
-        return
-      }
-
-      if (amount > userData.balance) {
-        setMessage("❌ Insufficient balance")
-        return
-      }
-
-      if (!recipientCardId.trim()) {
-        setMessage("❌ Please enter recipient Card ID")
-        return
-      }
-
       // Find recipient by card ID
       const usersRef = collection(db, "users")
       const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
@@ -417,6 +524,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
       setPaymentAmount("")
       setRecipientCardId("")
       setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
+
+      // Add notification for sender (debit)
+      addNotification('debit', amount, recipientCardId.trim())
     } catch (error) {
       console.error("Regular payment error:", error)
       setMessage("❌ Payment failed. Please try again.")
@@ -425,15 +535,62 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   }
 
-  const handleLogout = async () => {
-    await signOut(auth)
-    onLogout()
-  }
+  const executePayLaterPayment = async (amount: number, recipientCardId: string) => {
+    if (!userData || !auth.currentUser) return
 
-  const quickPayUser = (cardId: string) => {
-    setRecipientCardId(cardId)
-    // Auto scroll to payment form
-    document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+    setLoading(true)
+    setMessage("")
+
+    try {
+      // Find recipient by card ID
+      const usersRef = collection(db, "users")
+      const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        setMessage("❌ Recipient Card ID not found")
+        return
+      }
+
+      const recipientDoc = querySnapshot.docs[0]
+      const recipientData = recipientDoc.data()
+
+      // Update sender Pay Later used amount
+      const newPayLaterUsed = (userData.payLaterUsed || 0) + amount
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        payLaterUsed: newPayLaterUsed,
+      })
+
+      // Update recipient balance
+      const newRecipientBalance = recipientData.balance + amount
+      await updateDoc(doc(db, "users", recipientDoc.id), {
+        balance: newRecipientBalance,
+      })
+
+      // Create transaction record
+      await addDoc(collection(db, "transactions"), {
+        senderId: auth.currentUser.uid,
+        senderCardId: userData.cardId,
+        recipientId: recipientDoc.id,
+        recipientCardId: recipientCardId.trim(),
+        amount: amount,
+        timestamp: new Date().toISOString(),
+        status: "completed",
+        type: "pay_later",
+      })
+
+      setPayLaterAmount("")
+      setRecipientCardId("")
+      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} using Pay Later to @${recipientCardId}`)
+
+      // Add notification for sender (Pay Later debit)
+      addNotification('debit', amount, recipientCardId.trim())
+    } catch (error) {
+      console.error("Pay Later payment error:", error)
+      setMessage("❌ Payment failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (dataLoading) {
@@ -492,6 +649,45 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </div>
         </div>
       </header>
+
+      {/* Notifications */}
+      {notifications.length > 0 && (
+        <div className="fixed top-20 right-4 z-50 space-y-2">
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`p-4 rounded-lg shadow-lg border backdrop-blur-md transform transition-all duration-300 ease-in-out ${
+                notification.type === 'credit'
+                  ? 'bg-green-900/90 border-green-700 text-green-100'
+                  : 'bg-red-900/90 border-red-700 text-red-100'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  notification.type === 'credit' ? 'bg-green-600' : 'bg-red-600'
+                }`}>
+                  {notification.type === 'credit' ? (
+                    <Plus className="h-4 w-4 text-white" />
+                  ) : (
+                    <Send className="h-4 w-4 text-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold">
+                    {notification.type === 'credit' ? 'Money Received!' : 'Money Sent!'}
+                  </p>
+                  <p className="text-sm opacity-90">
+                    {notification.type === 'credit'
+                      ? `₹${notification.amount.toLocaleString()} credited to your account`
+                      : `₹${notification.amount.toLocaleString()} sent to @${notification.cardId}`
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="container mx-auto px-4 py-8">
         {/* Quick Stats */}
@@ -616,9 +812,22 @@ export function Dashboard({ onLogout }: DashboardProps) {
                   <Send className="h-4 w-4 mr-2" />
                   Quick Pay
                 </Button>
-                <Button variant="outline" className="border-gray-600 text-white hover:bg-gray-800 bg-transparent">
-                  <Gift className="h-4 w-4 mr-2" />
-                  Rewards
+                <Button
+                  variant="outline"
+                  className="border-gray-600 text-white hover:bg-gray-800 bg-transparent"
+                  onClick={() => setShowPinSetup(true)}
+                >
+                  {userData.pin ? (
+                    <>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Change PIN
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="h-4 w-4 mr-2" />
+                      Setup PIN
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -791,7 +1000,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                           <div>
                             <p className="text-white font-semibold">Pay Later Available</p>
                             <p className="text-green-400 text-2xl font-bold">
-                              ₹{((userData.payLaterLimit || 0) - (userData.payLaterUsed || 0)).toLocaleString()}
+                              ���{((userData.payLaterLimit || 0) - (userData.payLaterUsed || 0)).toLocaleString()}
                             </p>
                           </div>
                           <Shield className="h-8 w-8 text-green-400" />
@@ -998,6 +1207,129 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* PIN Setup Dialog */}
+      <Dialog open={showPinSetup} onOpenChange={setShowPinSetup}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <KeyRound className="h-5 w-5 mr-2" />
+              {userData?.pin ? 'Change PIN' : 'Setup PIN'}
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {pinSetupStep === 'create'
+                ? 'Create a 4-digit PIN to secure your payments'
+                : 'Confirm your PIN by entering it again'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-4">
+                {pinSetupStep === 'create' ? 'Enter your new PIN' : 'Confirm your PIN'}
+              </p>
+              <PinInput
+                onComplete={pinSetupStep === 'create' ? setNewPin : setConfirmPin}
+                value={pinSetupStep === 'create' ? newPin : confirmPin}
+                onChange={pinSetupStep === 'create' ? setNewPin : setConfirmPin}
+                className="mb-4"
+              />
+            </div>
+
+            {pinMessage && (
+              <div className={`p-3 rounded text-center ${
+                pinMessage.includes('❌')
+                  ? 'bg-red-900/50 text-red-300 border border-red-700'
+                  : 'bg-green-900/50 text-green-300 border border-green-700'
+              }`}>
+                {pinMessage}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handlePinSetup}
+                disabled={pinSetupStep === 'create' ? newPin.length !== 4 : confirmPin.length !== 4}
+                className="flex-1 bg-white text-black hover:bg-gray-200"
+              >
+                {pinSetupStep === 'create' ? 'Continue' : 'Confirm PIN'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowPinSetup(false)
+                  setPinSetupStep('create')
+                  setNewPin('')
+                  setConfirmPin('')
+                  setPinMessage('')
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* PIN Verification Dialog */}
+      <Dialog open={showPinVerification} onOpenChange={() => {
+        setShowPinVerification(false)
+        setPendingPayment(null)
+        setVerifyPin('')
+        setPinMessage('')
+      }}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              Verify PIN
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter your PIN to authorize this payment of ₹{pendingPayment?.amount.toLocaleString()} to @{pendingPayment?.recipientCardId}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-4">Enter your 4-digit PIN</p>
+              <PinInput
+                onComplete={handlePinVerification}
+                value={verifyPin}
+                onChange={setVerifyPin}
+                className="mb-4"
+              />
+            </div>
+
+            {pinMessage && (
+              <div className="p-3 rounded text-center bg-red-900/50 text-red-300 border border-red-700">
+                {pinMessage}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={() => handlePinVerification(verifyPin)}
+                disabled={verifyPin.length !== 4 || loading}
+                className="flex-1 bg-white text-black hover:bg-gray-200"
+              >
+                {loading ? 'Processing...' : 'Authorize Payment'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowPinVerification(false)
+                  setPendingPayment(null)
+                  setVerifyPin('')
+                  setPinMessage('')
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
