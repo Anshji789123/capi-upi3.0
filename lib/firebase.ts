@@ -22,7 +22,18 @@ export const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
   // Automatically falls back to long-polling in restricted environments.
   experimentalAutoDetectLongPolling: true,
+  // Enable offline persistence
+  localCache: {
+    kind: 'persistent',
+    tabManager: {
+      kind: 'auto'
+    }
+  }
 })
+
+// Helper functions for network management
+export const enableFirebaseNetwork = () => enableNetwork(db)
+export const disableFirebaseNetwork = () => disableNetwork(db)
 
 // Initialize analytics only on client side
 let analytics
