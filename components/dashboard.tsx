@@ -131,6 +131,12 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [showPaymentAuth, setShowPaymentAuth] = useState(false)
   const [showBiometricSetup, setShowBiometricSetup] = useState(false)
 
+  // Block card states
+  const [showBlockCard, setShowBlockCard] = useState(false)
+  const [blockDuration, setBlockDuration] = useState("")
+  const [isCardBlocked, setIsCardBlocked] = useState(false)
+  const [blockMessage, setBlockMessage] = useState("")
+
   // Firebase connection status
   const { isOnline, lastError } = useFirebaseConnection()
   const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
