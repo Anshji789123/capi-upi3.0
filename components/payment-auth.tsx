@@ -16,6 +16,7 @@ interface PaymentAuthProps {
   recipient: string
   message?: string
   loading?: boolean
+  userId?: string
 }
 
 type AuthMethod = "choose" | "biometric" | "pin"
