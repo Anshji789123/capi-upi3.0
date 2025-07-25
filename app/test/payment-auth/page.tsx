@@ -29,9 +29,17 @@ export default function PaymentAuthTestPage() {
       <div className="max-w-2xl mx-auto space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-4">Payment Authentication Test</h1>
-          <p className="text-gray-400">
+          <p className="text-gray-400 mb-4">
             Test the biometric and PIN-based payment authentication system
           </p>
+
+          <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 max-w-lg mx-auto">
+            <h3 className="text-sm font-medium text-blue-400 mb-2">📱 Biometric Authentication Note</h3>
+            <p className="text-xs text-blue-300">
+              If biometric setup fails, try opening this page in a new browser tab.
+              WebAuthn may not work in embedded contexts due to security policies.
+            </p>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
