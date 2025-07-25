@@ -1737,6 +1737,70 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Request Approval PIN Verification Dialog */}
+      <Dialog open={showRequestApproval} onOpenChange={() => {
+        setShowRequestApproval(false)
+        setPendingRequestApproval(null)
+        setVerifyPin('')
+        setPinMessage('')
+      }}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              Approve Payment Request
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter your PIN to approve this payment request of ₹{pendingRequestApproval?.amount.toLocaleString()} to @{pendingRequestApproval?.requesterCardId}
+              {pendingRequestApproval?.message && (
+                <div className="mt-2 p-2 bg-gray-800 rounded text-sm">
+                  Message: "{pendingRequestApproval.message}"
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-4">Enter your 4-digit PIN</p>
+              <PinInput
+                onComplete={executeRequestApproval}
+                value={verifyPin}
+                onChange={setVerifyPin}
+                className="mb-4"
+              />
+            </div>
+
+            {pinMessage && (
+              <div className="p-3 rounded text-center bg-red-900/50 text-red-300 border border-red-700">
+                {pinMessage}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={() => executeRequestApproval(verifyPin)}
+                disabled={verifyPin.length !== 4 || loading}
+                className="flex-1 bg-green-600 text-white hover:bg-green-700"
+              >
+                {loading ? 'Processing...' : 'Approve & Pay'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowRequestApproval(false)
+                  setPendingRequestApproval(null)
+                  setVerifyPin('')
+                  setPinMessage('')
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
