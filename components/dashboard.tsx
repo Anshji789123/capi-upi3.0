@@ -1048,6 +1048,93 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   }
 
+  const handleEmailUpdate = async () => {
+    if (!userData || !auth.currentUser || !newEmail.trim()) return
+
+    setLoading(true)
+    setSettingsMessage("")
+
+    try {
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        email: newEmail.trim(),
+        updatedAt: new Date().toISOString(),
+      })
+
+      setSettingsMessage("✅ Email updated successfully!")
+      setNewEmail("")
+    } catch (error) {
+      console.error("Email update error:", error)
+      setSettingsMessage("❌ Failed to update email. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!chatInput.trim()) return
+
+    const userMessage = {
+      id: Date.now().toString(),
+      text: chatInput.trim(),
+      isUser: true,
+      timestamp: new Date()
+    }
+
+    setChatMessages(prev => [...prev, userMessage])
+
+    // Simulate bot response
+    setTimeout(() => {
+      const botResponse = getBotResponse(chatInput.trim())
+      const botMessage = {
+        id: (Date.now() + 1).toString(),
+        text: botResponse,
+        isUser: false,
+        timestamp: new Date()
+      }
+      setChatMessages(prev => [...prev, botMessage])
+    }, 1000)
+
+    setChatInput("")
+  }
+
+  const getBotResponse = (input: string): string => {
+    const lowerInput = input.toLowerCase()
+
+    if (lowerInput.includes("balance") || lowerInput.includes("money")) {
+      return "Your current balance is displayed on your dashboard. You can check it anytime in the balance card. If you need to add money, you can receive payments from other users."
+    }
+    if (lowerInput.includes("send") || lowerInput.includes("payment")) {
+      return "To send money: 1) Go to the Send Money tab, 2) Enter the recipient's Card ID, 3) Enter the amount, 4) Complete PIN/biometric verification. Make sure you have sufficient balance!"
+    }
+    if (lowerInput.includes("pay later") || lowerInput.includes("credit")) {
+      return "Pay Later allows you to spend money even without sufficient balance. To apply: 1) Go to Pay Later tab, 2) Fill your income and profession details, 3) Get instant approval based on your credit score."
+    }
+    if (lowerInput.includes("pin") || lowerInput.includes("security")) {
+      return "For security, set up a 4-digit PIN in your card settings. You can also enable biometric authentication for faster payments. Always keep your PIN secret!"
+    }
+    if (lowerInput.includes("block") || lowerInput.includes("card") || lowerInput.includes("security")) {
+      return "If your card details are leaked, immediately use the 'Block Card' feature in the footer. You can choose different block durations from 1 hour to permanent. This will disable all transactions."
+    }
+    if (lowerInput.includes("credit score")) {
+      return "Your credit score improves with: 1) Regular transactions, 2) Higher transaction amounts, 3) Using Pay Later responsibly, 4) Maintaining payment consistency. Higher scores unlock better Pay Later limits!"
+    }
+    if (lowerInput.includes("request")) {
+      return "To request money: 1) Go to Request tab, 2) Select the user you want to request from, 3) Enter amount and optional message, 4) Send request. The recipient will get a notification to approve."
+    }
+    if (lowerInput.includes("card id") || lowerInput.includes("cardid")) {
+      return "Your Card ID is your unique identifier (like @john123-capi). Others use this to send you money. You can copy it from your card display. Share it safely with trusted contacts only."
+    }
+    if (lowerInput.includes("transaction") || lowerInput.includes("history")) {
+      return "All your transactions appear in the Recent Transactions section. You can see sent/received payments, Pay Later transactions, and their status. Green = money received, Red = money sent."
+    }
+    if (lowerInput.includes("help") || lowerInput.includes("support")) {
+      return "I can help with: account balance, sending money, Pay Later, credit scores, security features, transaction history, and general CAPI questions. What specific topic do you need help with?"
+    }
+
+    return "I'm here to help with CAPI! I can assist with payments, Pay Later, credit scores, security features, and account management. Could you please be more specific about what you need help with?"
+  }
+
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
