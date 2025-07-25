@@ -19,15 +19,15 @@ export const auth = getAuth(app)
 // Use long-polling so Firestore works even when WebSockets are blocked (e.g. v0 preview)
 export const db = initializeFirestore(app, {
   ignoreUndefinedProperties: true,
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
   // Automatically falls back to long-polling in restricted environments.
   experimentalAutoDetectLongPolling: true,
-  // Enable offline persistence
+  // Enable offline persistence with cache size specified in the cache object
   localCache: {
     kind: 'persistent',
     tabManager: {
       kind: 'auto'
-    }
+    },
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED
   }
 })
 
