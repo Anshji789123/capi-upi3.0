@@ -812,7 +812,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     const amount = Number.parseFloat(requestAmount)
 
     if (amount <= 0) {
-      setMessage("❌ Please enter a valid amount")
+      setMessage("�� Please enter a valid amount")
       return
     }
 
@@ -1027,6 +1027,20 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </div>
         </div>
       </header>
+
+      {/* Connection Status */}
+      {isOnline === false && (
+        <div className="bg-yellow-900/90 border-b border-yellow-700 px-4 py-2">
+          <div className="container mx-auto flex items-center justify-center">
+            <div className="flex items-center space-x-2 text-yellow-300">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">
+                {lastError ? "Connection error - using offline mode" : "Offline mode - changes will sync when connected"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Notifications */}
       {notifications.length > 0 && (
