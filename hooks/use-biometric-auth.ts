@@ -15,8 +15,13 @@ export function useBiometricAuth() {
 
   // Check if WebAuthn is supported
   const checkSupport = useCallback(() => {
-    const supported = window.PublicKeyCredential && 
-                     navigator.credentials && 
+    if (typeof window === "undefined") {
+      setIsSupported(false)
+      return false
+    }
+
+    const supported = window.PublicKeyCredential &&
+                     navigator.credentials &&
                      typeof navigator.credentials.create === "function"
     setIsSupported(supported)
     return supported
