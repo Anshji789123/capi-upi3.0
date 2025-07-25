@@ -1318,8 +1318,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                   <div className="flex space-x-2 mt-3">
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                      className="text-xs bg-black text-white hover:bg-gray-800 border border-white"
                       onClick={() => {
                         setActiveTab("send")
                         document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
@@ -1329,8 +1328,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                      className="text-xs bg-white text-black hover:bg-gray-200 border border-black"
                       onClick={() => {
                         setActiveTab("request")
                         document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
