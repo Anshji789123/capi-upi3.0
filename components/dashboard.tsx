@@ -986,6 +986,58 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   }
 
+  const handleBlockCard = async () => {
+    if (!userData || !auth.currentUser || !blockDuration) return
+
+    setLoading(true)
+    setBlockMessage("")
+
+    try {
+      const blockEndTime = new Date()
+      switch (blockDuration) {
+        case "1hour":
+          blockEndTime.setHours(blockEndTime.getHours() + 1)
+          break
+        case "6hours":
+          blockEndTime.setHours(blockEndTime.getHours() + 6)
+          break
+        case "24hours":
+          blockEndTime.setDate(blockEndTime.getDate() + 1)
+          break
+        case "3days":
+          blockEndTime.setDate(blockEndTime.getDate() + 3)
+          break
+        case "7days":
+          blockEndTime.setDate(blockEndTime.getDate() + 7)
+          break
+        case "permanent":
+          blockEndTime.setFullYear(blockEndTime.getFullYear() + 10) // Set far in future
+          break
+      }
+
+      // Update user's card status
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        cardBlocked: true,
+        blockDuration: blockDuration,
+        blockEndTime: blockEndTime.toISOString(),
+        blockedAt: new Date().toISOString(),
+      })
+
+      setIsCardBlocked(true)
+      setShowBlockCard(false)
+      setBlockDuration("")
+
+      const durationText = blockDuration === "permanent" ? "permanently" : `for ${blockDuration.replace(/(\d+)/, '$1 ').replace('hours', 'hour(s)').replace('days', 'day(s)')}`
+      setMessage(`🔒 Your card has been blocked ${durationText} for security. All transactions are now disabled.`)
+      setBlockMessage("")
+    } catch (error) {
+      console.error("Card block error:", error)
+      setBlockMessage("❌ Failed to block card. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
