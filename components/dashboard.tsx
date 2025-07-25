@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PinInput } from "@/components/pin-input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { PaymentAuth } from "@/components/payment-auth"
+import { BiometricSetup } from "@/components/biometric-setup"
 import {
   CreditCard,
   Send,
@@ -35,6 +37,7 @@ import {
   Lock,
   Unlock,
   KeyRound,
+  Fingerprint,
   DollarSign,
   CheckCircle,
   XCircle,
@@ -124,6 +127,8 @@ export function Dashboard({ onLogout }: DashboardProps) {
   // PIN related states
   const [showPinSetup, setShowPinSetup] = useState(false)
   const [showPinVerification, setShowPinVerification] = useState(false)
+  const [showPaymentAuth, setShowPaymentAuth] = useState(false)
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false)
   const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
@@ -512,13 +517,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
       return
     }
 
-    // Set pending payment and show PIN verification
+    // Set pending payment and show payment authentication
     setPendingPayment({
       type: 'payLater',
       amount,
       recipientCardId: recipientCardId.trim()
     })
-    setShowPinVerification(true)
+    setShowPaymentAuth(true)
     setMessage("")
   }
 
@@ -550,13 +555,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
       return
     }
 
-    // Set pending payment and show PIN verification
+    // Set pending payment and show payment authentication
     setPendingPayment({
       type: 'regular',
       amount,
       recipientCardId: recipientCardId.trim()
     })
-    setShowPinVerification(true)
+    setShowPaymentAuth(true)
     setMessage("")
   }
 
