@@ -2153,6 +2153,90 @@ export function Dashboard({ onLogout }: DashboardProps) {
         onClose={() => setShowBiometricSetup(false)}
         onSuccess={() => setShowBiometricSetup(false)}
       />
+
+      {/* Block Card Dialog */}
+      <Dialog open={showBlockCard} onOpenChange={setShowBlockCard}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Lock className="h-5 w-5 mr-2 text-red-400" />
+              Block Card for Security
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Block your card immediately for security reasons. If your card details are leaked, you can temporarily disable it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="bg-red-900/20 border border-red-700/50 p-4 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <Shield className="h-8 w-8 text-red-400" />
+                <div>
+                  <h3 className="text-white font-semibold">Card Security Block</h3>
+                  <p className="text-gray-300 text-sm">Your card will be temporarily disabled for all transactions</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="block-duration" className="text-white">
+                Block Duration
+              </Label>
+              <Select value={blockDuration} onValueChange={setBlockDuration} required>
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue placeholder="Select how long to block your card" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="1hour">1 Hour</SelectItem>
+                  <SelectItem value="6hours">6 Hours</SelectItem>
+                  <SelectItem value="24hours">24 Hours</SelectItem>
+                  <SelectItem value="3days">3 Days</SelectItem>
+                  <SelectItem value="7days">7 Days</SelectItem>
+                  <SelectItem value="permanent">Permanent (Contact Support to Unblock)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {blockMessage && (
+              <div className="p-3 rounded text-center bg-red-900/50 text-red-300 border border-red-700">
+                {blockMessage}
+              </div>
+            )}
+
+            <div className="bg-yellow-900/20 border border-yellow-700/50 p-4 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Target className="h-5 w-5 text-yellow-400" />
+                <div>
+                  <p className="text-yellow-200 font-medium">Important Notice</p>
+                  <p className="text-yellow-300 text-sm">
+                    Once blocked, you cannot make any payments or receive money until the block period expires or you contact support.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleBlockCard}
+                disabled={!blockDuration || loading}
+                className="flex-1 bg-red-600 text-white hover:bg-red-700"
+              >
+                {loading ? 'Blocking Card...' : 'Block Card Now'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowBlockCard(false)
+                  setBlockDuration("")
+                  setBlockMessage("")
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
