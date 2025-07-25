@@ -141,11 +141,20 @@ export function useBiometricAuth() {
       return { success: false, error: "Authentication failed" }
     } catch (error: any) {
       console.error("Biometric authentication error:", error)
-      return { 
-        success: false, 
-        error: error.name === "NotAllowedError" 
-          ? "Biometric authentication was cancelled or denied"
-          : "Biometric authentication failed" 
+
+      let errorMessage = "Biometric authentication failed"
+
+      if (error.name === "NotAllowedError") {
+        errorMessage = "Biometric authentication was cancelled or denied"
+      } else if (error.message?.includes("publickey-credentials-get")) {
+        errorMessage = "Biometric authentication is not available in this browser context. Please try opening the page in a new tab or use your PIN instead."
+      } else if (error.message?.includes("Permissions Policy")) {
+        errorMessage = "Biometric authentication requires additional permissions. Please use your PIN instead."
+      }
+
+      return {
+        success: false,
+        error: errorMessage
       }
     } finally {
       setLoading(false)
