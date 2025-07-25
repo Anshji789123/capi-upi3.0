@@ -130,6 +130,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [showPinVerification, setShowPinVerification] = useState(false)
   const [showPaymentAuth, setShowPaymentAuth] = useState(false)
   const [showBiometricSetup, setShowBiometricSetup] = useState(false)
+
+  // Firebase connection status
+  const { isOnline, lastError } = useFirebaseConnection()
   const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
@@ -828,7 +831,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
-        setMessage("❌ Recipient not found")
+        setMessage("�� Recipient not found")
         return
       }
 
