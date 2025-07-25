@@ -660,6 +660,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       // Add notification for sender (debit)
       addNotification('debit', amount, recipientCardId.trim())
+
+      // Update credit scores for both users
+      await updateCreditScore(auth.currentUser.uid)
+      await updateCreditScore(recipientDoc.id)
     } catch (error) {
       console.error("Regular payment error:", error)
       setMessage("❌ Payment failed. Please try again.")
