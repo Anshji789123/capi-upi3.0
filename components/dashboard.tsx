@@ -268,6 +268,42 @@ export function Dashboard({ onLogout }: DashboardProps) {
     return () => unsubscribe1()
   }, [])
 
+  // Real-time payment requests
+  useEffect(() => {
+    if (!auth.currentUser) return
+
+    // Listen for incoming payment requests (where user is the recipient)
+    const q1 = query(
+      collection(db, "payment_requests"),
+      where("recipientId", "==", auth.currentUser.uid),
+      where("status", "==", "pending")
+    )
+
+    // Listen for outgoing payment requests (where user is the requester)
+    const q2 = query(
+      collection(db, "payment_requests"),
+      where("requesterId", "==", auth.currentUser.uid)
+    )
+
+    const unsubscribe1 = onSnapshot(q1, (snapshot) => {
+      const incoming: PaymentRequest[] = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as PaymentRequest) }))
+
+      const unsubscribe2 = onSnapshot(q2, (snap2) => {
+        const outgoing: PaymentRequest[] = snap2.docs.map((d) => ({ id: d.id, ...(d.data() as PaymentRequest) }))
+
+        // Merge and sort by timestamp DESC
+        const combined = [...incoming, ...outgoing].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        )
+        setPaymentRequests(combined)
+      })
+
+      return () => unsubscribe2()
+    })
+
+    return () => unsubscribe1()
+  }, [])
+
   const copyCardId = () => {
     if (userData?.cardId) {
       navigator.clipboard.writeText(userData.cardId)
