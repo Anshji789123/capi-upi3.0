@@ -14,6 +14,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta
+          httpEquiv="Permissions-Policy"
+          content="publickey-credentials-create=*, publickey-credentials-get=*"
+        />
+      </head>
       <body>{children}</body>
     </html>
   )
