@@ -639,6 +639,21 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   }
 
+  const handlePaymentAuthSuccess = async () => {
+    if (!pendingPayment) return
+
+    setShowPaymentAuth(false)
+
+    // Execute the pending payment
+    if (pendingPayment.type === 'regular') {
+      await executeRegularPayment(pendingPayment.amount, pendingPayment.recipientCardId)
+    } else {
+      await executePayLaterPayment(pendingPayment.amount, pendingPayment.recipientCardId)
+    }
+
+    setPendingPayment(null)
+  }
+
   const handlePinVerification = async (pin: string) => {
     if (!userData || !pendingPayment) return
 
@@ -1180,10 +1195,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-3">
-                <Button className="bg-white text-black hover:bg-gray-200 flex items-center justify-center">
-                  <Send className="h-4 w-4 mr-2" />
-                  Quick Pay
-                </Button>
                 <Button
                   variant="outline"
                   className="border-gray-600 text-white hover:bg-gray-800 bg-transparent"
@@ -1200,6 +1211,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
                       Setup PIN
                     </>
                   )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-blue-600 text-blue-400 hover:bg-blue-900/20 bg-transparent"
+                  onClick={() => setShowBiometricSetup(true)}
+                >
+                  <Fingerprint className="h-4 w-4 mr-2" />
+                  Biometric
                 </Button>
               </div>
             </CardContent>
