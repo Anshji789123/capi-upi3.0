@@ -722,6 +722,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       // Add notification for sender (Pay Later debit)
       addNotification('debit', amount, recipientCardId.trim())
+
+      // Update credit scores for both users
+      await updateCreditScore(auth.currentUser.uid)
+      await updateCreditScore(recipientDoc.id)
     } catch (error) {
       console.error("Pay Later payment error:", error)
       setMessage("❌ Payment failed. Please try again.")
@@ -742,7 +746,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
 
     if (!requestRecipientCardId.trim()) {
-      setMessage("❌ Please select a user to request money from")
+      setMessage("�� Please select a user to request money from")
       return
     }
 
