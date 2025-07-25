@@ -151,9 +151,14 @@ export function PaymentAuth({
         <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-3">
           <div className="flex items-start space-x-2">
             <AlertCircle className="h-4 w-4 text-yellow-400 mt-0.5" />
-            <p className="text-sm text-yellow-300">
-              Biometric authentication is not supported on this device. Please use your PIN.
-            </p>
+            <div>
+              <p className="text-sm text-yellow-300 mb-1">
+                Biometric authentication is not available in this context.
+              </p>
+              <p className="text-xs text-yellow-400">
+                Try opening in a new tab or use your PIN below.
+              </p>
+            </div>
           </div>
         </div>
       )}
