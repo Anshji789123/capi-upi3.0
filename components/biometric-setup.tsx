@@ -27,6 +27,7 @@ export function BiometricSetup({ userId, isOpen, onClose, onSuccess }: Biometric
 
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState<"success" | "error" | "info">("info")
+  const [isInFrame, setIsInFrame] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
