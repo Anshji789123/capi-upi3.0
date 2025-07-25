@@ -1008,7 +1008,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       <div className="container mx-auto px-4 py-8">
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card className="border border-gray-700 bg-gradient-to-br from-blue-900/20 to-blue-800/20">
             <CardContent className="p-4 text-center">
               <Wallet className="h-8 w-8 text-blue-400 mx-auto mb-2" />
@@ -1032,6 +1032,17 @@ export function Dashboard({ onLogout }: DashboardProps) {
               <Users className="h-8 w-8 text-purple-400 mx-auto mb-2" />
               <p className="text-purple-400 text-sm font-medium">Active Users</p>
               <p className="text-white text-xl font-bold">{availableUsers.length}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-700 bg-gradient-to-br from-yellow-900/20 to-yellow-800/20">
+            <CardContent className="p-4 text-center">
+              <Award className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
+              <p className="text-yellow-400 text-sm font-medium">Credit Score</p>
+              <p className="text-white text-xl font-bold">{userData.creditScore || 300}</p>
+              <p className="text-gray-400 text-xs mt-1">
+                {(userData.creditScore || 300) >= 700 ? 'Good' : (userData.creditScore || 300) >= 600 ? 'Fair' : 'Poor'}
+              </p>
             </CardContent>
           </Card>
 
