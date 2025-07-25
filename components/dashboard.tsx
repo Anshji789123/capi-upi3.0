@@ -1959,29 +1959,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     </div>
                   ))}
 
-                  {/* Block Card Option */}
-                  <div className="p-4 bg-red-900/10 border border-red-700/30 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
-                          <Lock className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold">Security Feature</p>
-                          <p className="text-gray-400 text-sm">Block your card for immediate security</p>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                        onClick={() => setShowBlockCard(true)}
-                      >
-                        <Lock className="h-4 w-4 mr-2" />
-                        Block Card
-                      </Button>
-                    </div>
-                  </div>
+
                 </>
               ) : (
                 <div className="text-center py-12">
