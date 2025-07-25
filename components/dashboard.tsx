@@ -1513,13 +1513,8 @@ export function Dashboard({ onLogout }: DashboardProps) {
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-600">
                         {availableUsers.map((user) => (
-                          <SelectItem key={user.cardId} value={user.cardId} className="text-white">
-                            <div className="flex items-center space-x-2">
-                              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                {user.name.charAt(0).toUpperCase()}
-                              </div>
-                              <span>{user.name} (@{user.cardId})</span>
-                            </div>
+                          <SelectItem key={user.cardId} value={user.cardId} className="text-white hover:bg-gray-700">
+                            {user.name} (@{user.cardId})
                           </SelectItem>
                         ))}
                       </SelectContent>
