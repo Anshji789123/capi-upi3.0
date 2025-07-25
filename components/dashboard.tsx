@@ -2085,6 +2085,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
           amount={pendingPayment.amount}
           recipient={pendingPayment.recipientCardId}
           loading={loading}
+          userId={auth.currentUser?.uid}
         />
       )}
 
