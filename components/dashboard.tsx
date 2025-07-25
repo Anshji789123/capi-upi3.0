@@ -328,10 +328,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
     )
 
     const unsubscribe1 = onSnapshot(q1, (snapshot) => {
-      const incoming: PaymentRequest[] = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as PaymentRequest) }))
+      const incoming: PaymentRequest[] = snapshot.docs.map((d) => ({ ...(d.data() as PaymentRequest), id: d.id }))
 
       const unsubscribe2 = onSnapshot(q2, (snap2) => {
-        const outgoing: PaymentRequest[] = snap2.docs.map((d) => ({ id: d.id, ...(d.data() as PaymentRequest) }))
+        const outgoing: PaymentRequest[] = snap2.docs.map((d) => ({ ...(d.data() as PaymentRequest), id: d.id }))
 
         // Merge and sort by timestamp DESC
         const combined = [...incoming, ...outgoing].sort(
