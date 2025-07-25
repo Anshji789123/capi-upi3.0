@@ -417,9 +417,19 @@ export function Dashboard({ onLogout }: DashboardProps) {
       console.log("Applying for Pay Later...")
       const annualIncome = Number.parseInt(income)
       const userAge = Number.parseInt(age)
-      const approvedLimit = calculatePayLaterLimit(annualIncome, userAge, profession)
+      const baseLimit = calculatePayLaterLimit(annualIncome, userAge, profession)
 
-      console.log("Calculated limit:", approvedLimit)
+      // Update credit score first
+      await updateCreditScore(auth.currentUser.uid)
+
+      // Get updated user data with credit score
+      const updatedUserDoc = await getDoc(doc(db, "users", auth.currentUser.uid))
+      const updatedUserData = updatedUserDoc.data()
+      const currentCreditScore = updatedUserData?.creditScore || 300
+
+      const approvedLimit = getUpdatedPayLaterLimit(baseLimit, currentCreditScore)
+
+      console.log("Calculated limit:", approvedLimit, "Credit Score:", currentCreditScore)
 
       await updateDoc(doc(db, "users", auth.currentUser.uid), {
         income: annualIncome,
