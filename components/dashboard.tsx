@@ -317,6 +317,72 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   }
 
+  const calculateCreditScore = (totalAmount: number, transactionCount: number) => {
+    // Base score calculation
+    let score = 300 // Starting score
+
+    // Transaction amount factor (up to 400 points)
+    const amountScore = Math.min(400, (totalAmount / 100000) * 100) // 100k transactions = 100 points
+
+    // Transaction frequency factor (up to 200 points)
+    const frequencyScore = Math.min(200, transactionCount * 5) // 5 points per transaction, max 200
+
+    // Consistency bonus (up to 100 points)
+    const consistencyBonus = transactionCount > 10 ? Math.min(100, transactionCount * 2) : 0
+
+    score = score + amountScore + frequencyScore + consistencyBonus
+
+    return Math.min(1000, Math.round(score)) // Cap at 1000
+  }
+
+  const updateCreditScore = async (userId: string) => {
+    if (!auth.currentUser) return
+
+    try {
+      // Get all user transactions
+      const sentQuery = query(collection(db, "transactions"), where("senderId", "==", userId))
+      const receivedQuery = query(collection(db, "transactions"), where("recipientId", "==", userId))
+
+      const [sentDocs, receivedDocs] = await Promise.all([
+        getDocs(sentQuery),
+        getDocs(receivedQuery)
+      ])
+
+      const allTransactions = [
+        ...sentDocs.docs.map(doc => doc.data()),
+        ...receivedDocs.docs.map(doc => doc.data())
+      ]
+
+      const totalAmount = allTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0)
+      const transactionCount = allTransactions.length
+      const creditScore = calculateCreditScore(totalAmount, transactionCount)
+
+      // Update user's credit score
+      await updateDoc(doc(db, "users", userId), {
+        creditScore,
+        totalTransactionAmount: totalAmount,
+        transactionCount
+      })
+
+      console.log(`Credit score updated: ${creditScore} (Total: ₹${totalAmount}, Count: ${transactionCount})`)
+    } catch (error) {
+      console.error("Error updating credit score:", error)
+    }
+  }
+
+  const getUpdatedPayLaterLimit = (baseLimitFromIncome: number, creditScore: number) => {
+    let multiplier = 1.0
+
+    if (creditScore >= 900) multiplier = 2.0      // Excellent: 2x limit
+    else if (creditScore >= 800) multiplier = 1.7  // Very Good: 1.7x limit
+    else if (creditScore >= 700) multiplier = 1.4  // Good: 1.4x limit
+    else if (creditScore >= 600) multiplier = 1.2  // Fair: 1.2x limit
+    else if (creditScore >= 500) multiplier = 1.0  // Average: 1x limit
+    else multiplier = 0.8                          // Poor: 0.8x limit
+
+    return Math.round(baseLimitFromIncome * multiplier)
+  }
+
   const calculatePayLaterLimit = (income: number, age: number, profession: string) => {
     let baseLimit = Math.min(income * 0.15, 100000) // 15% of annual income or max 100k
 
