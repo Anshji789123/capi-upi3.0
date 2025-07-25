@@ -1540,18 +1540,21 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
                   <div>
                     <Label htmlFor="request-recipient" className="text-white">
-                      Request From (Card ID)
+                      Request From
                     </Label>
                     <Select value={requestRecipientCardId} onValueChange={setRequestRecipientCardId} required>
                       <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                        <SelectValue placeholder="Select a user to request money from" />
+                        <SelectValue placeholder="Select user or use credit score" />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
+                      <SelectContent className="bg-gray-800 border-gray-600 max-h-60 overflow-y-auto">
                         {availableUsers.map((user) => (
                           <SelectItem key={user.cardId} value={user.cardId} className="text-white hover:bg-gray-700">
                             {user.name} (@{user.cardId})
                           </SelectItem>
                         ))}
+                        <SelectItem value="credit_score" className="text-green-400 hover:bg-gray-700">
+                          Credit Score (₹{userData.creditScore || 300} available)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
