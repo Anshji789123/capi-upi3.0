@@ -39,6 +39,8 @@ import {
   CheckCircle,
   XCircle,
   ArrowDownLeft,
+  Award,
+  Target,
 } from "lucide-react"
 
 interface UserData {
@@ -54,6 +56,9 @@ interface UserData {
   joinedAt?: string
   pin?: string
   pinCreatedAt?: string
+  creditScore?: number
+  totalTransactionAmount?: number
+  transactionCount?: number
 }
 
 interface Transaction {
