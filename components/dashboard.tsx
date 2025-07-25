@@ -175,6 +175,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
             email: auth.currentUser.email || "",
             cardId,
             balance: 10000,
+            creditScore: 300, // Starting credit score
+            totalTransactionAmount: 0,
+            transactionCount: 0,
             createdAt: new Date().toISOString(),
           }
 
