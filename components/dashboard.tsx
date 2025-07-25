@@ -1470,7 +1470,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 <div className="bg-gray-800 p-3 rounded-lg mt-4">
                   <p className="text-gray-300 text-sm mb-2">💡 Improve your score:</p>
                   <ul className="text-gray-400 text-xs space-y-1">
-                    <li>• Make more transactions</li>
+                    <li>�� Make more transactions</li>
                     <li>• Increase transaction amounts</li>
                     <li>• Use Pay Later responsibly</li>
                     <li>• Maintain payment consistency</li>
@@ -2405,6 +2405,200 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 Cancel
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Settings className="h-5 w-5 mr-2" />
+              Account Settings
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Update your account information and preferences
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h3 className="text-white font-semibold mb-3">Account Information</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="current-email" className="text-gray-300">
+                    Current Email
+                  </Label>
+                  <Input
+                    id="current-email"
+                    value={userData?.email || ""}
+                    disabled
+                    className="bg-gray-700 border-gray-600 text-gray-400"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-email" className="text-white">
+                    New Email Address
+                  </Label>
+                  <Input
+                    id="new-email"
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter new email address"
+                    className="bg-gray-800 border-gray-600 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h3 className="text-white font-semibold mb-3">Security Settings</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white">PIN Protection</p>
+                    <p className="text-gray-400 text-sm">
+                      {userData?.pin ? "PIN is set up" : "No PIN configured"}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white"
+                    onClick={() => {
+                      setShowSettings(false)
+                      setShowPinSetup(true)
+                    }}
+                  >
+                    {userData?.pin ? "Change PIN" : "Setup PIN"}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white">Biometric Authentication</p>
+                    <p className="text-gray-400 text-sm">Enable fingerprint/face unlock</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-green-600 text-green-400 hover:bg-green-600 hover:text-white"
+                    onClick={() => {
+                      setShowSettings(false)
+                      setShowBiometricSetup(true)
+                    }}
+                  >
+                    Setup
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {settingsMessage && (
+              <div className={`p-3 rounded text-center ${
+                settingsMessage.includes('✅')
+                  ? 'bg-green-900/50 text-green-300 border border-green-700'
+                  : 'bg-red-900/50 text-red-300 border border-red-700'
+              }`}>
+                {settingsMessage}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleEmailUpdate}
+                disabled={!newEmail.trim() || loading}
+                className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {loading ? 'Updating...' : 'Update Email'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowSettings(false)
+                  setNewEmail("")
+                  setSettingsMessage("")
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Chatbot Dialog */}
+      <Dialog open={showChatbot} onOpenChange={setShowChatbot}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mr-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              CAPI Assistant
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Ask me anything about CAPI payments, features, and help!
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Chat Messages */}
+            <div className="h-80 bg-gray-800 rounded-lg p-4 overflow-y-auto space-y-3">
+              {chatMessages.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-400 text-sm">Hello! I'm your CAPI assistant.</p>
+                  <p className="text-gray-500 text-xs mt-1">Ask me about payments, security, or any CAPI features!</p>
+                </div>
+              ) : (
+                chatMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-xs px-3 py-2 rounded-lg ${
+                        message.isUser
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-700 text-gray-100'
+                      }`}
+                    >
+                      <p className="text-sm">{message.text}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Chat Input */}
+            <form onSubmit={handleChatSubmit} className="flex space-x-2">
+              <Input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask me anything about CAPI..."
+                className="flex-1 bg-gray-800 border-gray-600 text-white"
+              />
+              <Button
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </Button>
+            </form>
           </div>
         </DialogContent>
       </Dialog>
