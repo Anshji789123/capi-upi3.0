@@ -74,24 +74,50 @@ export function BiometricSetup({ userId, isOpen, onClose, onSuccess }: Biometric
               Biometric Authentication Not Available
             </DialogTitle>
             <DialogDescription className="text-gray-400">
-              Biometric authentication is not available in this browser context. This may be due to:
+              {isInFrame
+                ? "Biometric authentication is not available in embedded contexts due to security restrictions."
+                : "Biometric authentication is not supported in this browser or device."
+              }
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
-              <ul className="text-sm text-yellow-300 space-y-2">
-                <li>• You're viewing this in an iframe or embedded context</li>
-                <li>• Your browser doesn't support WebAuthn</li>
-                <li>• Browser permissions are restricted</li>
-              </ul>
-            </div>
-            <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-blue-400 mb-2">💡 Try this:</h4>
-              <p className="text-sm text-blue-300">
-                Open this page in a new browser tab or window to enable biometric authentication.
-                You can always use your PIN for secure payments.
-              </p>
-            </div>
+            {isInFrame ? (
+              <>
+                <div className="bg-orange-900/20 border border-orange-700/50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-orange-400 mb-2">🔒 Security Restriction</h4>
+                  <p className="text-sm text-orange-300">
+                    For security reasons, biometric authentication cannot be used in embedded pages or iframes.
+                  </p>
+                </div>
+                <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-blue-400 mb-2">💡 Solution:</h4>
+                  <p className="text-sm text-blue-300 mb-2">
+                    To enable biometric authentication, please:
+                  </p>
+                  <ol className="text-sm text-blue-300 space-y-1 ml-4">
+                    <li>1. Open this page in a new browser tab</li>
+                    <li>2. Or visit the page directly (not embedded)</li>
+                    <li>3. You can always use your PIN for secure payments</li>
+                  </ol>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+                  <ul className="text-sm text-yellow-300 space-y-2">
+                    <li>• Your browser doesn't support WebAuthn</li>
+                    <li>• Your device doesn't have biometric hardware</li>
+                    <li>• Browser permissions are restricted</li>
+                  </ul>
+                </div>
+                <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-blue-400 mb-2">💡 Alternative:</h4>
+                  <p className="text-sm text-blue-300">
+                    You can always use your PIN for secure payments. Consider updating your browser or using a device with biometric support.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
           <div className="flex justify-end">
             <Button onClick={onClose} variant="outline" className="border-gray-600 text-white">
