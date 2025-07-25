@@ -21,14 +21,15 @@ interface PaymentAuthProps {
 
 type AuthMethod = "choose" | "biometric" | "pin"
 
-export function PaymentAuth({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  amount, 
-  recipient, 
+export function PaymentAuth({
+  isOpen,
+  onClose,
+  onSuccess,
+  amount,
+  recipient,
   message,
-  loading = false 
+  loading = false,
+  userId = "current-user"
 }: PaymentAuthProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod>("choose")
   const [pin, setPin] = useState("")
