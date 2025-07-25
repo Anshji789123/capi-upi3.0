@@ -2260,9 +2260,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
               <p className="text-sm text-gray-400 mb-4">Enter your 4-digit PIN</p>
               <PinInput
                 onComplete={executeRequestApproval}
-                value={verifyPin}
-                onChange={setVerifyPin}
-                className="mb-4"
+                loading={loading}
               />
             </div>
 
