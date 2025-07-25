@@ -137,6 +137,16 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [isCardBlocked, setIsCardBlocked] = useState(false)
   const [blockMessage, setBlockMessage] = useState("")
 
+  // Settings states
+  const [showSettings, setShowSettings] = useState(false)
+  const [newEmail, setNewEmail] = useState("")
+  const [settingsMessage, setSettingsMessage] = useState("")
+
+  // Chatbot states
+  const [showChatbot, setShowChatbot] = useState(false)
+  const [chatMessages, setChatMessages] = useState<Array<{id: string, text: string, isUser: boolean, timestamp: Date}>>([])
+  const [chatInput, setChatInput] = useState("")
+
   // Firebase connection status
   const { isOnline, lastError } = useFirebaseConnection()
   const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
