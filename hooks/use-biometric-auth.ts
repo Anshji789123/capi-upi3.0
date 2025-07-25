@@ -20,9 +20,17 @@ export function useBiometricAuth() {
       return false
     }
 
-    const supported = window.PublicKeyCredential &&
-                     navigator.credentials &&
-                     typeof navigator.credentials.create === "function"
+    // Check if we're in an iframe or embedded context
+    const isInFrame = window !== window.top
+
+    // Check basic WebAuthn support
+    const hasWebAuthn = window.PublicKeyCredential &&
+                       navigator.credentials &&
+                       typeof navigator.credentials.create === "function"
+
+    // If in iframe, WebAuthn likely won't work due to permissions
+    const supported = hasWebAuthn && !isInFrame
+
     setIsSupported(supported)
     return supported
   }, [])
