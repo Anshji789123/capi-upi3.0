@@ -156,12 +156,16 @@ export function useBiometricAuth() {
 
       let errorMessage = "Biometric authentication failed"
 
+      const isInFrame = typeof window !== "undefined" && window !== window.top
+
       if (error.name === "NotAllowedError") {
-        errorMessage = "Biometric authentication was cancelled or denied"
-      } else if (error.message?.includes("publickey-credentials-get")) {
-        errorMessage = "Biometric authentication is not available in this browser context. Please try opening the page in a new tab or use your PIN instead."
-      } else if (error.message?.includes("Permissions Policy")) {
-        errorMessage = "Biometric authentication requires additional permissions. Please use your PIN instead."
+        errorMessage = isInFrame
+          ? "Biometric authentication is not available in embedded contexts. Please use your PIN or open in a new tab."
+          : "Biometric authentication was cancelled or denied"
+      } else if (error.message?.includes("publickey-credentials-get") || error.message?.includes("Permissions Policy")) {
+        errorMessage = isInFrame
+          ? "Biometric authentication requires opening this page directly. Please use your PIN or open in a new tab."
+          : "Biometric authentication is not available in this browser context. Please use your PIN instead."
       }
 
       return {
