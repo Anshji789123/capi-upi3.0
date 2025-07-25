@@ -351,7 +351,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
     if (!auth.currentUser || !userData) return
 
     // Update credit score on first load and after transactions
-    updateCreditScore(auth.currentUser.uid)
+    if (auth.currentUser) {
+      updateCreditScore(auth.currentUser.uid)
+    }
 
     // Set up periodic updates (every 5 minutes)
     const interval = setInterval(() => {
