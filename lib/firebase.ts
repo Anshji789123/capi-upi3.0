@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
-import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableNetwork, disableNetwork } from "firebase/firestore"
+import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableNetwork, disableNetwork, persistentLocalCache } from "firebase/firestore"
 import { getAnalytics } from "firebase/analytics"
 
 const firebaseConfig = {
@@ -22,13 +22,9 @@ export const db = initializeFirestore(app, {
   // Automatically falls back to long-polling in restricted environments.
   experimentalAutoDetectLongPolling: true,
   // Enable offline persistence with cache size specified in the cache object
-  localCache: {
-    kind: 'persistent',
-    tabManager: {
-      kind: 'auto'
-    },
+  localCache: persistentLocalCache({
     cacheSizeBytes: CACHE_SIZE_UNLIMITED
-  }
+  })
 })
 
 // Helper functions for network management

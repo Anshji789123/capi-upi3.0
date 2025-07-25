@@ -131,6 +131,22 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [showPaymentAuth, setShowPaymentAuth] = useState(false)
   const [showBiometricSetup, setShowBiometricSetup] = useState(false)
 
+  // Block card states
+  const [showBlockCard, setShowBlockCard] = useState(false)
+  const [blockDuration, setBlockDuration] = useState("")
+  const [isCardBlocked, setIsCardBlocked] = useState(false)
+  const [blockMessage, setBlockMessage] = useState("")
+
+  // Settings states
+  const [showSettings, setShowSettings] = useState(false)
+  const [newEmail, setNewEmail] = useState("")
+  const [settingsMessage, setSettingsMessage] = useState("")
+
+  // Chatbot states
+  const [showChatbot, setShowChatbot] = useState(false)
+  const [chatMessages, setChatMessages] = useState<Array<{id: string, text: string, isUser: boolean, timestamp: Date}>>([])
+  const [chatInput, setChatInput] = useState("")
+
   // Firebase connection status
   const { isOnline, lastError } = useFirebaseConnection()
   const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
@@ -276,10 +292,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
     const q2 = query(collection(db, "transactions"), where("recipientId", "==", auth.currentUser.uid))
 
     const unsubscribe1 = onSnapshot(q1, (snapshot) => {
-      const sent: Transaction[] = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Transaction) }))
+      const sent: Transaction[] = snapshot.docs.map((d) => ({ ...(d.data() as Transaction), id: d.id }))
 
       const unsubscribe2 = onSnapshot(q2, (snap2) => {
-        const received: Transaction[] = snap2.docs.map((d) => ({ id: d.id, ...(d.data() as Transaction) }))
+        const received: Transaction[] = snap2.docs.map((d) => ({ ...(d.data() as Transaction), id: d.id }))
 
         // Merge, sort by timestamp DESC, and keep latest 15
         const combined = [...sent, ...received].sort(
@@ -312,10 +328,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
     )
 
     const unsubscribe1 = onSnapshot(q1, (snapshot) => {
-      const incoming: PaymentRequest[] = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as PaymentRequest) }))
+      const incoming: PaymentRequest[] = snapshot.docs.map((d) => ({ ...(d.data() as PaymentRequest), id: d.id }))
 
       const unsubscribe2 = onSnapshot(q2, (snap2) => {
-        const outgoing: PaymentRequest[] = snap2.docs.map((d) => ({ id: d.id, ...(d.data() as PaymentRequest) }))
+        const outgoing: PaymentRequest[] = snap2.docs.map((d) => ({ ...(d.data() as PaymentRequest), id: d.id }))
 
         // Merge and sort by timestamp DESC
         const combined = [...incoming, ...outgoing].sort(
@@ -335,11 +351,15 @@ export function Dashboard({ onLogout }: DashboardProps) {
     if (!auth.currentUser || !userData) return
 
     // Update credit score on first load and after transactions
-    updateCreditScore(auth.currentUser.uid)
+    if (auth.currentUser) {
+      updateCreditScore(auth.currentUser.uid)
+    }
 
     // Set up periodic updates (every 5 minutes)
     const interval = setInterval(() => {
-      updateCreditScore(auth.currentUser.uid)
+      if (auth.currentUser) {
+        updateCreditScore(auth.currentUser.uid)
+      }
     }, 5 * 60 * 1000)
 
     return () => clearInterval(interval)
@@ -980,6 +1000,145 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   }
 
+  const handleBlockCard = async () => {
+    if (!userData || !auth.currentUser || !blockDuration) return
+
+    setLoading(true)
+    setBlockMessage("")
+
+    try {
+      const blockEndTime = new Date()
+      switch (blockDuration) {
+        case "1hour":
+          blockEndTime.setHours(blockEndTime.getHours() + 1)
+          break
+        case "6hours":
+          blockEndTime.setHours(blockEndTime.getHours() + 6)
+          break
+        case "24hours":
+          blockEndTime.setDate(blockEndTime.getDate() + 1)
+          break
+        case "3days":
+          blockEndTime.setDate(blockEndTime.getDate() + 3)
+          break
+        case "7days":
+          blockEndTime.setDate(blockEndTime.getDate() + 7)
+          break
+        case "permanent":
+          blockEndTime.setFullYear(blockEndTime.getFullYear() + 10) // Set far in future
+          break
+      }
+
+      // Update user's card status
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        cardBlocked: true,
+        blockDuration: blockDuration,
+        blockEndTime: blockEndTime.toISOString(),
+        blockedAt: new Date().toISOString(),
+      })
+
+      setIsCardBlocked(true)
+      setShowBlockCard(false)
+      setBlockDuration("")
+
+      const durationText = blockDuration === "permanent" ? "permanently" : `for ${blockDuration.replace(/(\d+)/, '$1 ').replace('hours', 'hour(s)').replace('days', 'day(s)')}`
+      setMessage(`🔒 Your card has been blocked ${durationText} for security. All transactions are now disabled.`)
+      setBlockMessage("")
+    } catch (error) {
+      console.error("Card block error:", error)
+      setBlockMessage("❌ Failed to block card. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEmailUpdate = async () => {
+    if (!userData || !auth.currentUser || !newEmail.trim()) return
+
+    setLoading(true)
+    setSettingsMessage("")
+
+    try {
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        email: newEmail.trim(),
+        updatedAt: new Date().toISOString(),
+      })
+
+      setSettingsMessage("✅ Email updated successfully!")
+      setNewEmail("")
+    } catch (error) {
+      console.error("Email update error:", error)
+      setSettingsMessage("❌ Failed to update email. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!chatInput.trim()) return
+
+    const userMessage = {
+      id: Date.now().toString(),
+      text: chatInput.trim(),
+      isUser: true,
+      timestamp: new Date()
+    }
+
+    setChatMessages(prev => [...prev, userMessage])
+
+    // Simulate bot response
+    setTimeout(() => {
+      const botResponse = getBotResponse(chatInput.trim())
+      const botMessage = {
+        id: (Date.now() + 1).toString(),
+        text: botResponse,
+        isUser: false,
+        timestamp: new Date()
+      }
+      setChatMessages(prev => [...prev, botMessage])
+    }, 1000)
+
+    setChatInput("")
+  }
+
+  const getBotResponse = (input: string): string => {
+    const lowerInput = input.toLowerCase()
+
+    if (lowerInput.includes("balance") || lowerInput.includes("money")) {
+      return "Your current balance is displayed on your dashboard. You can check it anytime in the balance card. If you need to add money, you can receive payments from other users."
+    }
+    if (lowerInput.includes("send") || lowerInput.includes("payment")) {
+      return "To send money: 1) Go to the Send Money tab, 2) Enter the recipient's Card ID, 3) Enter the amount, 4) Complete PIN/biometric verification. Make sure you have sufficient balance!"
+    }
+    if (lowerInput.includes("pay later") || lowerInput.includes("credit")) {
+      return "Pay Later allows you to spend money even without sufficient balance. To apply: 1) Go to Pay Later tab, 2) Fill your income and profession details, 3) Get instant approval based on your credit score."
+    }
+    if (lowerInput.includes("pin") || lowerInput.includes("security")) {
+      return "For security, set up a 4-digit PIN in your card settings. You can also enable biometric authentication for faster payments. Always keep your PIN secret!"
+    }
+    if (lowerInput.includes("block") || lowerInput.includes("card") || lowerInput.includes("security")) {
+      return "If your card details are leaked, immediately use the 'Block Card' feature in the footer. You can choose different block durations from 1 hour to permanent. This will disable all transactions."
+    }
+    if (lowerInput.includes("credit score")) {
+      return "Your credit score improves with: 1) Regular transactions, 2) Higher transaction amounts, 3) Using Pay Later responsibly, 4) Maintaining payment consistency. Higher scores unlock better Pay Later limits!"
+    }
+    if (lowerInput.includes("request")) {
+      return "To request money: 1) Go to Request tab, 2) Select the user you want to request from, 3) Enter amount and optional message, 4) Send request. The recipient will get a notification to approve."
+    }
+    if (lowerInput.includes("card id") || lowerInput.includes("cardid")) {
+      return "Your Card ID is your unique identifier (like @john123-capi). Others use this to send you money. You can copy it from your card display. Share it safely with trusted contacts only."
+    }
+    if (lowerInput.includes("transaction") || lowerInput.includes("history")) {
+      return "All your transactions appear in the Recent Transactions section. You can see sent/received payments, Pay Later transactions, and their status. Green = money received, Red = money sent."
+    }
+    if (lowerInput.includes("help") || lowerInput.includes("support")) {
+      return "I can help with: account balance, sending money, Pay Later, credit scores, security features, transaction history, and general CAPI questions. What specific topic do you need help with?"
+    }
+
+    return "I'm here to help with CAPI! I can assist with payments, Pay Later, credit scores, security features, and account management. Could you please be more specific about what you need help with?"
+  }
+
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -1022,7 +1181,12 @@ export function Dashboard({ onLogout }: DashboardProps) {
             <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
               <Bell className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white"
+              onClick={() => setShowSettings(true)}
+            >
               <Settings className="h-4 w-4" />
             </Button>
             <Button
@@ -1318,8 +1482,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                   <div className="flex space-x-2 mt-3">
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                      className="text-xs bg-black text-white hover:bg-gray-800 border border-white"
                       onClick={() => {
                         setActiveTab("send")
                         document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
@@ -1329,8 +1492,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                      className="text-xs bg-white text-black hover:bg-gray-200 border border-black"
                       onClick={() => {
                         setActiveTab("request")
                         document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
@@ -1347,29 +1509,29 @@ export function Dashboard({ onLogout }: DashboardProps) {
           {/* Payment Section */}
           <Card className="border border-gray-700 bg-gray-900 lg:col-span-1" id="payment-section">
             <CardHeader>
-              <div className="flex space-x-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:space-x-2">
                 <Button
                   variant={activeTab === "send" ? "default" : "ghost"}
                   onClick={() => setActiveTab("send")}
-                  className={`flex-1 ${activeTab === "send" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
+                  className={`flex-1 text-xs sm:text-sm ${activeTab === "send" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
                 >
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Money
+                  <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Send
                 </Button>
                 <Button
                   variant={activeTab === "payLater" ? "default" : "ghost"}
                   onClick={() => setActiveTab("payLater")}
-                  className={`flex-1 ${activeTab === "payLater" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
+                  className={`flex-1 text-xs sm:text-sm ${activeTab === "payLater" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
                 >
-                  <Clock className="h-4 w-4 mr-2" />
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Pay Later
                 </Button>
                 <Button
                   variant={activeTab === "request" ? "default" : "ghost"}
                   onClick={() => setActiveTab("request")}
-                  className={`flex-1 ${activeTab === "request" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
+                  className={`flex-1 text-xs sm:text-sm ${activeTab === "request" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
                 >
-                  <DollarSign className="h-4 w-4 mr-2" />
+                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Request
                 </Button>
               </div>
@@ -1852,55 +2014,59 @@ export function Dashboard({ onLogout }: DashboardProps) {
           <CardContent>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {transactions.length > 0 ? (
-                transactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          transaction.senderId === auth.currentUser?.uid
-                            ? "bg-red-500/20 text-red-400"
-                            : "bg-green-500/20 text-green-400"
-                        }`}
-                      >
-                        {transaction.senderId === auth.currentUser?.uid ? (
-                          <Send className="h-5 w-5" />
-                        ) : (
-                          <Plus className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-white font-semibold">
-                          {transaction.senderId === auth.currentUser?.uid ? "Sent to" : "Received from"} @
-                          {transaction.senderId === auth.currentUser?.uid
-                            ? transaction.recipientCardId
-                            : transaction.senderCardId}
-                        </p>
-                        <div className="flex items-center space-x-2">
-                          <p className="text-gray-400 text-sm">{new Date(transaction.timestamp).toLocaleString()}</p>
-                          {transaction.type === "pay_later" && (
-                            <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
-                              Pay Later
-                            </span>
+                <>
+                  {transactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            transaction.senderId === auth.currentUser?.uid
+                              ? "bg-red-500/20 text-red-400"
+                              : "bg-green-500/20 text-green-400"
+                          }`}
+                        >
+                          {transaction.senderId === auth.currentUser?.uid ? (
+                            <Send className="h-5 w-5" />
+                          ) : (
+                            <Plus className="h-5 w-5" />
                           )}
                         </div>
+                        <div>
+                          <p className="text-white font-semibold">
+                            {transaction.senderId === auth.currentUser?.uid ? "Sent to" : "Received from"} @
+                            {transaction.senderId === auth.currentUser?.uid
+                              ? transaction.recipientCardId
+                              : transaction.senderCardId}
+                          </p>
+                          <div className="flex items-center space-x-2">
+                            <p className="text-gray-400 text-sm">{new Date(transaction.timestamp).toLocaleString()}</p>
+                            {transaction.type === "pay_later" && (
+                              <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                Pay Later
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p
+                          className={`font-bold text-lg ${
+                            transaction.senderId === auth.currentUser?.uid ? "text-red-400" : "text-green-400"
+                          }`}
+                        >
+                          {transaction.senderId === auth.currentUser?.uid ? "-" : "+"}₹
+                          {transaction.amount.toLocaleString()}
+                        </p>
+                        <p className="text-gray-400 text-sm capitalize">{transaction.status}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p
-                        className={`font-bold text-lg ${
-                          transaction.senderId === auth.currentUser?.uid ? "text-red-400" : "text-green-400"
-                        }`}
-                      >
-                        {transaction.senderId === auth.currentUser?.uid ? "-" : "+"}₹
-                        {transaction.amount.toLocaleString()}
-                      </p>
-                      <p className="text-gray-400 text-sm capitalize">{transaction.status}</p>
-                    </div>
-                  </div>
-                ))
+                  ))}
+
+
+                </>
               ) : (
                 <div className="text-center py-12">
                   <History className="h-16 w-16 text-gray-600 mx-auto mb-4" />
@@ -1911,6 +2077,45 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Footer Section */}
+      <div className="container mx-auto px-4 py-6 mt-8">
+        <Card className="border border-gray-700 bg-gray-900">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center">
+                  <Shield className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold">Card Security</h3>
+                  <p className="text-gray-400 text-sm">Block your card immediately if your details are compromised</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                onClick={() => setShowBlockCard(true)}
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                Block Card Now
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Chatbot Button */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button
+          onClick={() => setShowChatbot(true)}
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </Button>
       </div>
 
       {/* PIN Setup Dialog */}
@@ -1935,9 +2140,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
               </p>
               <PinInput
                 onComplete={pinSetupStep === 'create' ? setNewPin : setConfirmPin}
-                value={pinSetupStep === 'create' ? newPin : confirmPin}
-                onChange={pinSetupStep === 'create' ? setNewPin : setConfirmPin}
-                className="mb-4"
+                loading={loading}
               />
             </div>
 
@@ -1999,9 +2202,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
               <p className="text-sm text-gray-400 mb-4">Enter your 4-digit PIN</p>
               <PinInput
                 onComplete={handlePinVerification}
-                value={verifyPin}
-                onChange={setVerifyPin}
-                className="mb-4"
+                loading={loading}
               />
             </div>
 
@@ -2063,9 +2264,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
               <p className="text-sm text-gray-400 mb-4">Enter your 4-digit PIN</p>
               <PinInput
                 onComplete={executeRequestApproval}
-                value={verifyPin}
-                onChange={setVerifyPin}
-                className="mb-4"
+                loading={loading}
               />
             </div>
 
@@ -2123,6 +2322,284 @@ export function Dashboard({ onLogout }: DashboardProps) {
         onClose={() => setShowBiometricSetup(false)}
         onSuccess={() => setShowBiometricSetup(false)}
       />
+
+      {/* Block Card Dialog */}
+      <Dialog open={showBlockCard} onOpenChange={setShowBlockCard}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Lock className="h-5 w-5 mr-2 text-red-400" />
+              Block Card for Security
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Block your card immediately for security reasons. If your card details are leaked, you can temporarily disable it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="bg-red-900/20 border border-red-700/50 p-4 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <Shield className="h-8 w-8 text-red-400" />
+                <div>
+                  <h3 className="text-white font-semibold">Card Security Block</h3>
+                  <p className="text-gray-300 text-sm">Your card will be temporarily disabled for all transactions</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="block-duration" className="text-white">
+                Block Duration
+              </Label>
+              <Select value={blockDuration} onValueChange={setBlockDuration} required>
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue placeholder="Select how long to block your card" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="1hour">1 Hour</SelectItem>
+                  <SelectItem value="6hours">6 Hours</SelectItem>
+                  <SelectItem value="24hours">24 Hours</SelectItem>
+                  <SelectItem value="3days">3 Days</SelectItem>
+                  <SelectItem value="7days">7 Days</SelectItem>
+                  <SelectItem value="permanent">Permanent (Contact Support to Unblock)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {blockMessage && (
+              <div className="p-3 rounded text-center bg-red-900/50 text-red-300 border border-red-700">
+                {blockMessage}
+              </div>
+            )}
+
+            <div className="bg-yellow-900/20 border border-yellow-700/50 p-4 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Target className="h-5 w-5 text-yellow-400" />
+                <div>
+                  <p className="text-yellow-200 font-medium">Important Notice</p>
+                  <p className="text-yellow-300 text-sm">
+                    Once blocked, you cannot make any payments or receive money until the block period expires or you contact support.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleBlockCard}
+                disabled={!blockDuration || loading}
+                className="flex-1 bg-red-600 text-white hover:bg-red-700"
+              >
+                {loading ? 'Blocking Card...' : 'Block Card Now'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowBlockCard(false)
+                  setBlockDuration("")
+                  setBlockMessage("")
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Settings className="h-5 w-5 mr-2" />
+              Account Settings
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Update your account information and preferences
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h3 className="text-white font-semibold mb-3">Account Information</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="current-email" className="text-gray-300">
+                    Current Email
+                  </Label>
+                  <Input
+                    id="current-email"
+                    value={userData?.email || ""}
+                    disabled
+                    className="bg-gray-700 border-gray-600 text-gray-400"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-email" className="text-white">
+                    New Email Address
+                  </Label>
+                  <Input
+                    id="new-email"
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter new email address"
+                    className="bg-gray-800 border-gray-600 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h3 className="text-white font-semibold mb-3">Security Settings</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white">PIN Protection</p>
+                    <p className="text-gray-400 text-sm">
+                      {userData?.pin ? "PIN is set up" : "No PIN configured"}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white"
+                    onClick={() => {
+                      setShowSettings(false)
+                      setShowPinSetup(true)
+                    }}
+                  >
+                    {userData?.pin ? "Change PIN" : "Setup PIN"}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white">Biometric Authentication</p>
+                    <p className="text-gray-400 text-sm">Enable fingerprint/face unlock</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-green-600 text-green-400 hover:bg-green-600 hover:text-white"
+                    onClick={() => {
+                      setShowSettings(false)
+                      setShowBiometricSetup(true)
+                    }}
+                  >
+                    Setup
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {settingsMessage && (
+              <div className={`p-3 rounded text-center ${
+                settingsMessage.includes('✅')
+                  ? 'bg-green-900/50 text-green-300 border border-green-700'
+                  : 'bg-red-900/50 text-red-300 border border-red-700'
+              }`}>
+                {settingsMessage}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleEmailUpdate}
+                disabled={!newEmail.trim() || loading}
+                className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {loading ? 'Updating...' : 'Update Email'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowSettings(false)
+                  setNewEmail("")
+                  setSettingsMessage("")
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Chatbot Dialog */}
+      <Dialog open={showChatbot} onOpenChange={setShowChatbot}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mr-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              CAPI Assistant
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Ask me anything about CAPI payments, features, and help!
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Chat Messages */}
+            <div className="h-80 bg-gray-800 rounded-lg p-4 overflow-y-auto space-y-3">
+              {chatMessages.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-400 text-sm">Hello! I'm your CAPI assistant.</p>
+                  <p className="text-gray-500 text-xs mt-1">Ask me about payments, security, or any CAPI features!</p>
+                </div>
+              ) : (
+                chatMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-xs px-3 py-2 rounded-lg ${
+                        message.isUser
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-700 text-gray-100'
+                      }`}
+                    >
+                      <p className="text-sm">{message.text}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Chat Input */}
+            <form onSubmit={handleChatSubmit} className="flex space-x-2">
+              <Input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask me anything about CAPI..."
+                className="flex-1 bg-gray-800 border-gray-600 text-white"
+              />
+              <Button
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </Button>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
