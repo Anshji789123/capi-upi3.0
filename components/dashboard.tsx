@@ -746,7 +746,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
 
     if (!requestRecipientCardId.trim()) {
-      setMessage("�� Please select a user to request money from")
+      setMessage("❌ Please select a user to request money from")
       return
     }
 
@@ -887,6 +887,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       // Add notification for payer (debit)
       addNotification('debit', request.amount, request.requesterCardId)
+
+      // Update credit scores for both users
+      await updateCreditScore(auth.currentUser.uid)
+      await updateCreditScore(request.requesterId)
     } catch (error) {
       console.error("Request approval error:", error)
       setMessage("❌ Payment failed. Please try again.")
