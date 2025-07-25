@@ -156,7 +156,9 @@ export function useBiometricAuth() {
 
   // Remove biometric credentials
   const removeBiometric = useCallback((userId: string) => {
-    localStorage.removeItem(`biometric_${userId}`)
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(`biometric_${userId}`)
+    }
     setIsRegistered(false)
   }, [])
 
