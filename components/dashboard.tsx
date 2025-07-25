@@ -14,6 +14,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PinInput } from "@/components/pin-input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { PaymentAuth } from "@/components/payment-auth"
+import { BiometricSetup } from "@/components/biometric-setup"
+import { useFirebaseConnection } from "@/hooks/use-firebase-connection"
 import {
   CreditCard,
   Send,
@@ -35,6 +38,7 @@ import {
   Lock,
   Unlock,
   KeyRound,
+  Fingerprint,
   DollarSign,
   CheckCircle,
   XCircle,
@@ -124,6 +128,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
   // PIN related states
   const [showPinSetup, setShowPinSetup] = useState(false)
   const [showPinVerification, setShowPinVerification] = useState(false)
+  const [showPaymentAuth, setShowPaymentAuth] = useState(false)
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false)
+
+  // Firebase connection status
+  const { isOnline, lastError } = useFirebaseConnection()
   const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
@@ -185,8 +194,17 @@ export function Dashboard({ onLogout }: DashboardProps) {
           setUserData(newUserData)
           console.log("Created new user document:", newUserData)
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching user data:", error)
+
+        // Handle offline scenarios gracefully
+        if (error.code === 'unavailable' || error.message?.includes('offline')) {
+          setMessage("⚠️ Working in offline mode. Some features may be limited.")
+        } else if (error.code === 'permission-denied') {
+          setMessage("❌ Permission denied. Please check your authentication.")
+        } else {
+          setMessage("❌ Unable to load user data. Please check your connection and try again.")
+        }
       } finally {
         setDataLoading(false)
       }
@@ -512,13 +530,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
       return
     }
 
-    // Set pending payment and show PIN verification
+    // Set pending payment and show payment authentication
     setPendingPayment({
       type: 'payLater',
       amount,
       recipientCardId: recipientCardId.trim()
     })
-    setShowPinVerification(true)
+    setShowPaymentAuth(true)
     setMessage("")
   }
 
@@ -550,13 +568,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
       return
     }
 
-    // Set pending payment and show PIN verification
+    // Set pending payment and show payment authentication
     setPendingPayment({
       type: 'regular',
       amount,
       recipientCardId: recipientCardId.trim()
     })
-    setShowPinVerification(true)
+    setShowPaymentAuth(true)
     setMessage("")
   }
 
@@ -632,6 +650,21 @@ export function Dashboard({ onLogout }: DashboardProps) {
         setPinMessage("❌ Failed to create PIN. Please try again.")
       }
     }
+  }
+
+  const handlePaymentAuthSuccess = async () => {
+    if (!pendingPayment) return
+
+    setShowPaymentAuth(false)
+
+    // Execute the pending payment
+    if (pendingPayment.type === 'regular') {
+      await executeRegularPayment(pendingPayment.amount, pendingPayment.recipientCardId)
+    } else {
+      await executePayLaterPayment(pendingPayment.amount, pendingPayment.recipientCardId)
+    }
+
+    setPendingPayment(null)
   }
 
   const handlePinVerification = async (pin: string) => {
@@ -788,7 +821,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     const amount = Number.parseFloat(requestAmount)
 
     if (amount <= 0) {
-      setMessage("❌ Please enter a valid amount")
+      setMessage("�� Please enter a valid amount")
       return
     }
 
@@ -807,7 +840,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
-        setMessage("❌ Recipient not found")
+        setMessage("�� Recipient not found")
         return
       }
 
@@ -1004,6 +1037,20 @@ export function Dashboard({ onLogout }: DashboardProps) {
         </div>
       </header>
 
+      {/* Connection Status */}
+      {isOnline === false && (
+        <div className="bg-yellow-900/90 border-b border-yellow-700 px-4 py-2">
+          <div className="container mx-auto flex items-center justify-center">
+            <div className="flex items-center space-x-2 text-yellow-300">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">
+                {lastError ? "Connection error - using offline mode" : "Offline mode - changes will sync when connected"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Notifications */}
       {notifications.length > 0 && (
         <div className="fixed top-20 right-4 z-50 space-y-2">
@@ -1175,10 +1222,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-3">
-                <Button className="bg-white text-black hover:bg-gray-200 flex items-center justify-center">
-                  <Send className="h-4 w-4 mr-2" />
-                  Quick Pay
-                </Button>
                 <Button
                   variant="outline"
                   className="border-gray-600 text-white hover:bg-gray-800 bg-transparent"
@@ -1195,6 +1238,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
                       Setup PIN
                     </>
                   )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-blue-600 text-blue-400 hover:bg-blue-900/20 bg-transparent"
+                  onClick={() => setShowBiometricSetup(true)}
+                >
+                  <Fingerprint className="h-4 w-4 mr-2" />
+                  Biometric
                 </Button>
               </div>
             </CardContent>
@@ -2048,6 +2099,30 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Authentication Dialog */}
+      {pendingPayment && (
+        <PaymentAuth
+          isOpen={showPaymentAuth}
+          onClose={() => {
+            setShowPaymentAuth(false)
+            setPendingPayment(null)
+          }}
+          onSuccess={handlePaymentAuthSuccess}
+          amount={pendingPayment.amount}
+          recipient={pendingPayment.recipientCardId}
+          loading={loading}
+          userId={auth.currentUser?.uid}
+        />
+      )}
+
+      {/* Biometric Setup Dialog */}
+      <BiometricSetup
+        userId={auth.currentUser?.uid || ""}
+        isOpen={showBiometricSetup}
+        onClose={() => setShowBiometricSetup(false)}
+        onSuccess={() => setShowBiometricSetup(false)}
+      />
     </div>
   )
 }

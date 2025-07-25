@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
-import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore"
+import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableNetwork, disableNetwork } from "firebase/firestore"
 import { getAnalytics } from "firebase/analytics"
 
 const firebaseConfig = {
@@ -19,10 +19,21 @@ export const auth = getAuth(app)
 // Use long-polling so Firestore works even when WebSockets are blocked (e.g. v0 preview)
 export const db = initializeFirestore(app, {
   ignoreUndefinedProperties: true,
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
   // Automatically falls back to long-polling in restricted environments.
   experimentalAutoDetectLongPolling: true,
+  // Enable offline persistence with cache size specified in the cache object
+  localCache: {
+    kind: 'persistent',
+    tabManager: {
+      kind: 'auto'
+    },
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED
+  }
 })
+
+// Helper functions for network management
+export const enableFirebaseNetwork = () => enableNetwork(db)
+export const disableFirebaseNetwork = () => disableNetwork(db)
 
 // Initialize analytics only on client side
 let analytics
