@@ -312,6 +312,21 @@ export function Dashboard({ onLogout }: DashboardProps) {
     return () => unsubscribe1()
   }, [])
 
+  // Update credit score periodically
+  useEffect(() => {
+    if (!auth.currentUser || !userData) return
+
+    // Update credit score on first load and after transactions
+    updateCreditScore(auth.currentUser.uid)
+
+    // Set up periodic updates (every 5 minutes)
+    const interval = setInterval(() => {
+      updateCreditScore(auth.currentUser.uid)
+    }, 5 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [transactions])
+
   const copyCardId = () => {
     if (userData?.cardId) {
       navigator.clipboard.writeText(userData.cardId)
