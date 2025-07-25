@@ -33,6 +33,11 @@ export function BiometricSetup({ userId, isOpen, onClose, onSuccess }: Biometric
     if (isOpen) {
       checkSupport()
       checkRegistration(userId)
+
+      // Check if we're in an iframe
+      if (typeof window !== "undefined") {
+        setIsInFrame(window !== window.top)
+      }
     }
   }, [isOpen, userId, checkSupport, checkRegistration])
 
