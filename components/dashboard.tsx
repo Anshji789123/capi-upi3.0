@@ -292,10 +292,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
     const q2 = query(collection(db, "transactions"), where("recipientId", "==", auth.currentUser.uid))
 
     const unsubscribe1 = onSnapshot(q1, (snapshot) => {
-      const sent: Transaction[] = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Transaction) }))
+      const sent: Transaction[] = snapshot.docs.map((d) => ({ ...(d.data() as Transaction), id: d.id }))
 
       const unsubscribe2 = onSnapshot(q2, (snap2) => {
-        const received: Transaction[] = snap2.docs.map((d) => ({ id: d.id, ...(d.data() as Transaction) }))
+        const received: Transaction[] = snap2.docs.map((d) => ({ ...(d.data() as Transaction), id: d.id }))
 
         // Merge, sort by timestamp DESC, and keep latest 15
         const combined = [...sent, ...received].sort(
