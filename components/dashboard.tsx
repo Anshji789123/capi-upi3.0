@@ -619,6 +619,168 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   }
 
+  const handlePaymentRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userData || !auth.currentUser) return
+
+    const amount = Number.parseFloat(requestAmount)
+
+    if (amount <= 0) {
+      setMessage("❌ Please enter a valid amount")
+      return
+    }
+
+    if (!requestRecipientCardId.trim()) {
+      setMessage("❌ Please select a user to request money from")
+      return
+    }
+
+    setLoading(true)
+    setMessage("")
+
+    try {
+      // Find recipient by card ID
+      const usersRef = collection(db, "users")
+      const q = query(usersRef, where("cardId", "==", requestRecipientCardId.trim()))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        setMessage("❌ Recipient not found")
+        return
+      }
+
+      const recipientDoc = querySnapshot.docs[0]
+      const recipientData = recipientDoc.data()
+
+      // Create payment request
+      await addDoc(collection(db, "payment_requests"), {
+        requesterId: auth.currentUser.uid,
+        requesterCardId: userData.cardId,
+        requesterName: userData.name,
+        recipientId: recipientDoc.id,
+        recipientCardId: requestRecipientCardId.trim(),
+        amount: amount,
+        message: requestMessage.trim() || "",
+        timestamp: new Date().toISOString(),
+        status: "pending",
+        type: "payment_request",
+      })
+
+      setRequestAmount("")
+      setRequestRecipientCardId("")
+      setRequestMessage("")
+      setMessage(`✅ Payment request sent to @${requestRecipientCardId} for ₹${amount.toLocaleString()}`)
+    } catch (error) {
+      console.error("Payment request error:", error)
+      setMessage("❌ Failed to send payment request. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRequestApproval = async (request: PaymentRequest, approved: boolean) => {
+    if (!userData || !auth.currentUser) return
+
+    if (approved) {
+      // Check if user has sufficient balance
+      if (request.amount > userData.balance) {
+        setMessage("❌ Insufficient balance to approve this request")
+        return
+      }
+
+      // Check if PIN is set up
+      if (!userData.pin) {
+        setMessage("❌ Please set up a PIN first for secure payments")
+        setShowPinSetup(true)
+        return
+      }
+
+      // Set pending request approval and show PIN verification
+      setPendingRequestApproval(request)
+      setShowRequestApproval(true)
+      setMessage("")
+    } else {
+      // Decline the request
+      setLoading(true)
+      try {
+        await updateDoc(doc(db, "payment_requests", request.id), {
+          status: "declined",
+        })
+        setMessage(`❌ Payment request declined`)
+      } catch (error) {
+        console.error("Request decline error:", error)
+        setMessage("❌ Failed to decline request. Please try again.")
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  const executeRequestApproval = async (pin: string) => {
+    if (!userData || !pendingRequestApproval || !auth.currentUser) return
+
+    if (pin !== userData.pin) {
+      setPinMessage("❌ Incorrect PIN. Please try again.")
+      setVerifyPin('')
+      return
+    }
+
+    setShowRequestApproval(false)
+    setVerifyPin('')
+    setPinMessage('')
+
+    setLoading(true)
+    setMessage("")
+
+    try {
+      const request = pendingRequestApproval
+
+      // Update payer's balance (subtract)
+      const newPayerBalance = userData.balance - request.amount
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        balance: newPayerBalance,
+      })
+
+      // Update requester's balance (add)
+      const requesterDoc = await getDoc(doc(db, "users", request.requesterId))
+      if (requesterDoc.exists()) {
+        const requesterData = requesterDoc.data()
+        const newRequesterBalance = requesterData.balance + request.amount
+        await updateDoc(doc(db, "users", request.requesterId), {
+          balance: newRequesterBalance,
+        })
+      }
+
+      // Update request status
+      await updateDoc(doc(db, "payment_requests", request.id), {
+        status: "approved",
+      })
+
+      // Create transaction record
+      await addDoc(collection(db, "transactions"), {
+        senderId: auth.currentUser.uid,
+        senderCardId: userData.cardId,
+        recipientId: request.requesterId,
+        recipientCardId: request.requesterCardId,
+        amount: request.amount,
+        timestamp: new Date().toISOString(),
+        status: "completed",
+        type: "request_payment",
+      })
+
+      setMessage(`✅ Successfully sent ₹${request.amount.toLocaleString()} to @${request.requesterCardId}`)
+
+      // Add notification for payer (debit)
+      addNotification('debit', request.amount, request.requesterCardId)
+    } catch (error) {
+      console.error("Request approval error:", error)
+      setMessage("❌ Payment failed. Please try again.")
+    } finally {
+      setLoading(false)
+      setPendingRequestApproval(null)
+    }
+  }
+
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
