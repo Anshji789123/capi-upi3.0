@@ -357,7 +357,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
     // Set up periodic updates (every 5 minutes)
     const interval = setInterval(() => {
-      updateCreditScore(auth.currentUser.uid)
+      if (auth.currentUser) {
+        updateCreditScore(auth.currentUser.uid)
+      }
     }, 5 * 60 * 1000)
 
     return () => clearInterval(interval)
