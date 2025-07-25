@@ -57,8 +57,6 @@ export function PaymentAuth({
       
       // Check biometric support and registration
       checkSupport()
-      // Get user ID from auth (this would typically come from your auth context)
-      const userId = "current-user" // Replace with actual user ID from auth context
       checkRegistration(userId)
     }
   }, [isOpen, checkSupport, checkRegistration])
