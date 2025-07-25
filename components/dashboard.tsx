@@ -1856,55 +1856,81 @@ export function Dashboard({ onLogout }: DashboardProps) {
           <CardContent>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {transactions.length > 0 ? (
-                transactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          transaction.senderId === auth.currentUser?.uid
-                            ? "bg-red-500/20 text-red-400"
-                            : "bg-green-500/20 text-green-400"
-                        }`}
-                      >
-                        {transaction.senderId === auth.currentUser?.uid ? (
-                          <Send className="h-5 w-5" />
-                        ) : (
-                          <Plus className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-white font-semibold">
-                          {transaction.senderId === auth.currentUser?.uid ? "Sent to" : "Received from"} @
-                          {transaction.senderId === auth.currentUser?.uid
-                            ? transaction.recipientCardId
-                            : transaction.senderCardId}
-                        </p>
-                        <div className="flex items-center space-x-2">
-                          <p className="text-gray-400 text-sm">{new Date(transaction.timestamp).toLocaleString()}</p>
-                          {transaction.type === "pay_later" && (
-                            <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
-                              Pay Later
-                            </span>
+                <>
+                  {transactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            transaction.senderId === auth.currentUser?.uid
+                              ? "bg-red-500/20 text-red-400"
+                              : "bg-green-500/20 text-green-400"
+                          }`}
+                        >
+                          {transaction.senderId === auth.currentUser?.uid ? (
+                            <Send className="h-5 w-5" />
+                          ) : (
+                            <Plus className="h-5 w-5" />
                           )}
                         </div>
+                        <div>
+                          <p className="text-white font-semibold">
+                            {transaction.senderId === auth.currentUser?.uid ? "Sent to" : "Received from"} @
+                            {transaction.senderId === auth.currentUser?.uid
+                              ? transaction.recipientCardId
+                              : transaction.senderCardId}
+                          </p>
+                          <div className="flex items-center space-x-2">
+                            <p className="text-gray-400 text-sm">{new Date(transaction.timestamp).toLocaleString()}</p>
+                            {transaction.type === "pay_later" && (
+                              <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                Pay Later
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p
+                          className={`font-bold text-lg ${
+                            transaction.senderId === auth.currentUser?.uid ? "text-red-400" : "text-green-400"
+                          }`}
+                        >
+                          {transaction.senderId === auth.currentUser?.uid ? "-" : "+"}₹
+                          {transaction.amount.toLocaleString()}
+                        </p>
+                        <p className="text-gray-400 text-sm capitalize">{transaction.status}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p
-                        className={`font-bold text-lg ${
-                          transaction.senderId === auth.currentUser?.uid ? "text-red-400" : "text-green-400"
-                        }`}
+                  ))}
+
+                  {/* Block Card Option */}
+                  <div className="p-4 bg-red-900/10 border border-red-700/30 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
+                          <Lock className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold">Security Feature</p>
+                          <p className="text-gray-400 text-sm">Block your card for immediate security</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                        onClick={() => setShowBlockCard(true)}
                       >
-                        {transaction.senderId === auth.currentUser?.uid ? "-" : "+"}₹
-                        {transaction.amount.toLocaleString()}
-                      </p>
-                      <p className="text-gray-400 text-sm capitalize">{transaction.status}</p>
+                        <Lock className="h-4 w-4 mr-2" />
+                        Block Card
+                      </Button>
                     </div>
                   </div>
-                ))
+                </>
               ) : (
                 <div className="text-center py-12">
                   <History className="h-16 w-16 text-gray-600 mx-auto mb-4" />
