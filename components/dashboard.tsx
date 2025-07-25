@@ -1092,6 +1092,85 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 </div>
               )}
 
+              {activeTab === "request" && (
+                <form onSubmit={handlePaymentRequest} className="space-y-4">
+                  <div className="bg-gradient-to-r from-orange-900/20 to-yellow-900/20 p-4 rounded-lg mb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-white font-semibold mb-2">💸 Request Money</h3>
+                        <p className="text-gray-400 text-sm">Ask other users to send you money</p>
+                      </div>
+                      <DollarSign className="h-8 w-8 text-orange-400" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="request-recipient" className="text-white">
+                      Request From (Card ID)
+                    </Label>
+                    <Select value={requestRecipientCardId} onValueChange={setRequestRecipientCardId} required>
+                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                        <SelectValue placeholder="Select a user to request money from" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        {availableUsers.map((user) => (
+                          <SelectItem key={user.cardId} value={user.cardId} className="text-white">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                {user.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span>{user.name} (@{user.cardId})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="request-amount" className="text-white">
+                      Amount (₹)
+                    </Label>
+                    <Input
+                      id="request-amount"
+                      type="number"
+                      value={requestAmount}
+                      onChange={(e) => setRequestAmount(e.target.value)}
+                      placeholder="Enter amount to request"
+                      className="bg-gray-800 border-gray-600 text-white"
+                      min="1"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="request-message" className="text-white">
+                      Message (Optional)
+                    </Label>
+                    <Input
+                      id="request-message"
+                      type="text"
+                      value={requestMessage}
+                      onChange={(e) => setRequestMessage(e.target.value)}
+                      placeholder="Add a note for your request"
+                      className="bg-gray-800 border-gray-600 text-white"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={loading || availableUsers.length === 0}
+                    className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 text-white hover:from-orange-700 hover:to-yellow-700"
+                  >
+                    {loading ? "Sending Request..." : "Send Request"}
+                  </Button>
+
+                  {availableUsers.length === 0 && (
+                    <p className="text-gray-400 text-sm text-center">No users available to request money from</p>
+                  )}
+                </form>
+              )}
+
               {message && (
                 <div
                   className={`p-3 rounded mt-4 ${
