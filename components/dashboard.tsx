@@ -1264,6 +1264,30 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     <li>• Use Pay Later responsibly</li>
                     <li>• Maintain payment consistency</li>
                   </ul>
+                  <div className="flex space-x-2 mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                      onClick={() => {
+                        setActiveTab("send")
+                        document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+                      }}
+                    >
+                      Send Money
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                      onClick={() => {
+                        setActiveTab("request")
+                        document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+                      }}
+                    >
+                      Request Money
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
