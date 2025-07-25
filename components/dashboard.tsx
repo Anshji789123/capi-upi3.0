@@ -16,6 +16,7 @@ import { PinInput } from "@/components/pin-input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { PaymentAuth } from "@/components/payment-auth"
 import { BiometricSetup } from "@/components/biometric-setup"
+import { useFirebaseConnection } from "@/hooks/use-firebase-connection"
 import {
   CreditCard,
   Send,
