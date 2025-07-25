@@ -35,6 +35,12 @@ import {
   Lock,
   Unlock,
   KeyRound,
+  DollarSign,
+  CheckCircle,
+  XCircle,
+  ArrowDownLeft,
+  Award,
+  Target,
 } from "lucide-react"
 
 interface UserData {
@@ -50,6 +56,9 @@ interface UserData {
   joinedAt?: string
   pin?: string
   pinCreatedAt?: string
+  creditScore?: number
+  totalTransactionAmount?: number
+  transactionCount?: number
 }
 
 interface Transaction {
@@ -72,6 +81,20 @@ interface Notification {
   timestamp: number
 }
 
+interface PaymentRequest {
+  id: string
+  requesterId: string
+  requesterCardId: string
+  requesterName: string
+  recipientId: string
+  recipientCardId: string
+  amount: number
+  message?: string
+  timestamp: string
+  status: 'pending' | 'approved' | 'declined'
+  type: 'payment_request'
+}
+
 interface DashboardProps {
   onLogout: () => void
 }
@@ -89,6 +112,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [dataLoading, setDataLoading] = useState(true)
   const [notifications, setNotifications] = useState<Notification[]>([])
+
+  // Payment request states
+  const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([])
+  const [requestAmount, setRequestAmount] = useState("")
+  const [requestRecipientCardId, setRequestRecipientCardId] = useState("")
+  const [requestMessage, setRequestMessage] = useState("")
+  const [pendingRequestApproval, setPendingRequestApproval] = useState<PaymentRequest | null>(null)
+  const [showRequestApproval, setShowRequestApproval] = useState(false)
 
   // PIN related states
   const [showPinSetup, setShowPinSetup] = useState(false)
@@ -144,6 +175,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
             email: auth.currentUser.email || "",
             cardId,
             balance: 10000,
+            creditScore: 300, // Starting credit score
+            totalTransactionAmount: 0,
+            transactionCount: 0,
             createdAt: new Date().toISOString(),
           }
 
@@ -242,12 +276,140 @@ export function Dashboard({ onLogout }: DashboardProps) {
     return () => unsubscribe1()
   }, [])
 
+  // Real-time payment requests
+  useEffect(() => {
+    if (!auth.currentUser) return
+
+    // Listen for incoming payment requests (where user is the recipient)
+    const q1 = query(
+      collection(db, "payment_requests"),
+      where("recipientId", "==", auth.currentUser.uid),
+      where("status", "==", "pending")
+    )
+
+    // Listen for outgoing payment requests (where user is the requester)
+    const q2 = query(
+      collection(db, "payment_requests"),
+      where("requesterId", "==", auth.currentUser.uid)
+    )
+
+    const unsubscribe1 = onSnapshot(q1, (snapshot) => {
+      const incoming: PaymentRequest[] = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as PaymentRequest) }))
+
+      const unsubscribe2 = onSnapshot(q2, (snap2) => {
+        const outgoing: PaymentRequest[] = snap2.docs.map((d) => ({ id: d.id, ...(d.data() as PaymentRequest) }))
+
+        // Merge and sort by timestamp DESC
+        const combined = [...incoming, ...outgoing].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        )
+        setPaymentRequests(combined)
+      })
+
+      return () => unsubscribe2()
+    })
+
+    return () => unsubscribe1()
+  }, [])
+
+  // Update credit score periodically
+  useEffect(() => {
+    if (!auth.currentUser || !userData) return
+
+    // Update credit score on first load and after transactions
+    updateCreditScore(auth.currentUser.uid)
+
+    // Set up periodic updates (every 5 minutes)
+    const interval = setInterval(() => {
+      updateCreditScore(auth.currentUser.uid)
+    }, 5 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [transactions])
+
   const copyCardId = () => {
     if (userData?.cardId) {
       navigator.clipboard.writeText(userData.cardId)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
+  }
+
+  const calculateCreditScore = (totalAmount: number, transactionCount: number) => {
+    // Base score calculation
+    let score = 300 // Starting score
+
+    // Transaction amount factor (up to 400 points)
+    const amountScore = Math.min(400, (totalAmount / 100000) * 100) // 100k transactions = 100 points
+
+    // Transaction frequency factor (up to 200 points)
+    const frequencyScore = Math.min(200, transactionCount * 5) // 5 points per transaction, max 200
+
+    // Consistency bonus (up to 100 points)
+    const consistencyBonus = transactionCount > 10 ? Math.min(100, transactionCount * 2) : 0
+
+    score = score + amountScore + frequencyScore + consistencyBonus
+
+    return Math.min(1000, Math.round(score)) // Cap at 1000
+  }
+
+  const updateCreditScore = async (userId: string) => {
+    if (!auth.currentUser) return
+
+    try {
+      // Get all user transactions
+      const sentQuery = query(collection(db, "transactions"), where("senderId", "==", userId))
+      const receivedQuery = query(collection(db, "transactions"), where("recipientId", "==", userId))
+
+      const [sentDocs, receivedDocs] = await Promise.all([
+        getDocs(sentQuery),
+        getDocs(receivedQuery)
+      ])
+
+      const allTransactions = [
+        ...sentDocs.docs.map(doc => doc.data()),
+        ...receivedDocs.docs.map(doc => doc.data())
+      ]
+
+      const totalAmount = allTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0)
+      const transactionCount = allTransactions.length
+      const creditScore = calculateCreditScore(totalAmount, transactionCount)
+
+      // Get current credit score to check for improvements
+      const currentUserDoc = await getDoc(doc(db, "users", userId))
+      const currentData = currentUserDoc.data()
+      const previousScore = currentData?.creditScore || 300
+
+      // Update user's credit score
+      await updateDoc(doc(db, "users", userId), {
+        creditScore,
+        totalTransactionAmount: totalAmount,
+        transactionCount
+      })
+
+      // Show notification for score improvement
+      if (userId === auth.currentUser?.uid && creditScore > previousScore) {
+        const improvement = creditScore - previousScore
+        addNotification('credit', improvement, `Credit score improved by ${improvement} points!`)
+      }
+
+      console.log(`Credit score updated: ${creditScore} (Total: ₹${totalAmount}, Count: ${transactionCount})`)
+    } catch (error) {
+      console.error("Error updating credit score:", error)
+    }
+  }
+
+  const getUpdatedPayLaterLimit = (baseLimitFromIncome: number, creditScore: number) => {
+    let multiplier = 1.0
+
+    if (creditScore >= 900) multiplier = 2.0      // Excellent: 2x limit
+    else if (creditScore >= 800) multiplier = 1.7  // Very Good: 1.7x limit
+    else if (creditScore >= 700) multiplier = 1.4  // Good: 1.4x limit
+    else if (creditScore >= 600) multiplier = 1.2  // Fair: 1.2x limit
+    else if (creditScore >= 500) multiplier = 1.0  // Average: 1x limit
+    else multiplier = 0.8                          // Poor: 0.8x limit
+
+    return Math.round(baseLimitFromIncome * multiplier)
   }
 
   const calculatePayLaterLimit = (income: number, age: number, profession: string) => {
@@ -284,9 +446,19 @@ export function Dashboard({ onLogout }: DashboardProps) {
       console.log("Applying for Pay Later...")
       const annualIncome = Number.parseInt(income)
       const userAge = Number.parseInt(age)
-      const approvedLimit = calculatePayLaterLimit(annualIncome, userAge, profession)
+      const baseLimit = calculatePayLaterLimit(annualIncome, userAge, profession)
 
-      console.log("Calculated limit:", approvedLimit)
+      // Update credit score first
+      await updateCreditScore(auth.currentUser.uid)
+
+      // Get updated user data with credit score
+      const updatedUserDoc = await getDoc(doc(db, "users", auth.currentUser.uid))
+      const updatedUserData = updatedUserDoc.data()
+      const currentCreditScore = updatedUserData?.creditScore || 300
+
+      const approvedLimit = getUpdatedPayLaterLimit(baseLimit, currentCreditScore)
+
+      console.log("Calculated limit:", approvedLimit, "Credit Score:", currentCreditScore)
 
       await updateDoc(doc(db, "users", auth.currentUser.uid), {
         income: annualIncome,
@@ -395,6 +567,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
   const quickPayUser = (cardId: string) => {
     setRecipientCardId(cardId)
+    setActiveTab("send")
+    // Auto scroll to payment form
+    document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const quickRequestUser = (cardId: string) => {
+    setRequestRecipientCardId(cardId)
+    setActiveTab("request")
     // Auto scroll to payment form
     document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
   }
@@ -527,6 +707,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       // Add notification for sender (debit)
       addNotification('debit', amount, recipientCardId.trim())
+
+      // Update credit scores for both users
+      await updateCreditScore(auth.currentUser.uid)
+      await updateCreditScore(recipientDoc.id)
     } catch (error) {
       console.error("Regular payment error:", error)
       setMessage("❌ Payment failed. Please try again.")
@@ -585,11 +769,181 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       // Add notification for sender (Pay Later debit)
       addNotification('debit', amount, recipientCardId.trim())
+
+      // Update credit scores for both users
+      await updateCreditScore(auth.currentUser.uid)
+      await updateCreditScore(recipientDoc.id)
     } catch (error) {
       console.error("Pay Later payment error:", error)
       setMessage("❌ Payment failed. Please try again.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePaymentRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userData || !auth.currentUser) return
+
+    const amount = Number.parseFloat(requestAmount)
+
+    if (amount <= 0) {
+      setMessage("❌ Please enter a valid amount")
+      return
+    }
+
+    if (!requestRecipientCardId.trim()) {
+      setMessage("❌ Please select a user to request money from")
+      return
+    }
+
+    setLoading(true)
+    setMessage("")
+
+    try {
+      // Find recipient by card ID
+      const usersRef = collection(db, "users")
+      const q = query(usersRef, where("cardId", "==", requestRecipientCardId.trim()))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        setMessage("❌ Recipient not found")
+        return
+      }
+
+      const recipientDoc = querySnapshot.docs[0]
+      const recipientData = recipientDoc.data()
+
+      // Create payment request
+      await addDoc(collection(db, "payment_requests"), {
+        requesterId: auth.currentUser.uid,
+        requesterCardId: userData.cardId,
+        requesterName: userData.name,
+        recipientId: recipientDoc.id,
+        recipientCardId: requestRecipientCardId.trim(),
+        amount: amount,
+        message: requestMessage.trim() || "",
+        timestamp: new Date().toISOString(),
+        status: "pending",
+        type: "payment_request",
+      })
+
+      setRequestAmount("")
+      setRequestRecipientCardId("")
+      setRequestMessage("")
+      setMessage(`✅ Payment request sent to @${requestRecipientCardId} for ₹${amount.toLocaleString()}`)
+    } catch (error) {
+      console.error("Payment request error:", error)
+      setMessage("❌ Failed to send payment request. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRequestApproval = async (request: PaymentRequest, approved: boolean) => {
+    if (!userData || !auth.currentUser) return
+
+    if (approved) {
+      // Check if user has sufficient balance
+      if (request.amount > userData.balance) {
+        setMessage("❌ Insufficient balance to approve this request")
+        return
+      }
+
+      // Check if PIN is set up
+      if (!userData.pin) {
+        setMessage("❌ Please set up a PIN first for secure payments")
+        setShowPinSetup(true)
+        return
+      }
+
+      // Set pending request approval and show PIN verification
+      setPendingRequestApproval(request)
+      setShowRequestApproval(true)
+      setMessage("")
+    } else {
+      // Decline the request
+      setLoading(true)
+      try {
+        await updateDoc(doc(db, "payment_requests", request.id), {
+          status: "declined",
+        })
+        setMessage(`❌ Payment request declined`)
+      } catch (error) {
+        console.error("Request decline error:", error)
+        setMessage("❌ Failed to decline request. Please try again.")
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  const executeRequestApproval = async (pin: string) => {
+    if (!userData || !pendingRequestApproval || !auth.currentUser) return
+
+    if (pin !== userData.pin) {
+      setPinMessage("❌ Incorrect PIN. Please try again.")
+      setVerifyPin('')
+      return
+    }
+
+    setShowRequestApproval(false)
+    setVerifyPin('')
+    setPinMessage('')
+
+    setLoading(true)
+    setMessage("")
+
+    try {
+      const request = pendingRequestApproval
+
+      // Update payer's balance (subtract)
+      const newPayerBalance = userData.balance - request.amount
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        balance: newPayerBalance,
+      })
+
+      // Update requester's balance (add)
+      const requesterDoc = await getDoc(doc(db, "users", request.requesterId))
+      if (requesterDoc.exists()) {
+        const requesterData = requesterDoc.data()
+        const newRequesterBalance = requesterData.balance + request.amount
+        await updateDoc(doc(db, "users", request.requesterId), {
+          balance: newRequesterBalance,
+        })
+      }
+
+      // Update request status
+      await updateDoc(doc(db, "payment_requests", request.id), {
+        status: "approved",
+      })
+
+      // Create transaction record
+      await addDoc(collection(db, "transactions"), {
+        senderId: auth.currentUser.uid,
+        senderCardId: userData.cardId,
+        recipientId: request.requesterId,
+        recipientCardId: request.requesterCardId,
+        amount: request.amount,
+        timestamp: new Date().toISOString(),
+        status: "completed",
+        type: "request_payment",
+      })
+
+      setMessage(`✅ Successfully sent ₹${request.amount.toLocaleString()} to @${request.requesterCardId}`)
+
+      // Add notification for payer (debit)
+      addNotification('debit', request.amount, request.requesterCardId)
+
+      // Update credit scores for both users
+      await updateCreditScore(auth.currentUser.uid)
+      await updateCreditScore(request.requesterId)
+    } catch (error) {
+      console.error("Request approval error:", error)
+      setMessage("❌ Payment failed. Please try again.")
+    } finally {
+      setLoading(false)
+      setPendingRequestApproval(null)
     }
   }
 
@@ -691,7 +1045,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       <div className="container mx-auto px-4 py-8">
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card className="border border-gray-700 bg-gradient-to-br from-blue-900/20 to-blue-800/20">
             <CardContent className="p-4 text-center">
               <Wallet className="h-8 w-8 text-blue-400 mx-auto mb-2" />
@@ -718,16 +1072,29 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </CardContent>
           </Card>
 
+          <Card className="border border-gray-700 bg-gradient-to-br from-yellow-900/20 to-yellow-800/20">
+            <CardContent className="p-4 text-center">
+              <Award className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
+              <p className="text-yellow-400 text-sm font-medium">Credit Score</p>
+              <p className="text-white text-xl font-bold">{userData.creditScore || 300}</p>
+              <p className="text-gray-400 text-xs mt-1">
+                {(userData.creditScore || 300) >= 700 ? 'Good' : (userData.creditScore || 300) >= 600 ? 'Fair' : 'Poor'}
+              </p>
+            </CardContent>
+          </Card>
+
           <Card className="border border-gray-700 bg-gradient-to-br from-orange-900/20 to-orange-800/20">
             <CardContent className="p-4 text-center">
-              <TrendingUp className="h-8 w-8 text-orange-400 mx-auto mb-2" />
-              <p className="text-orange-400 text-sm font-medium">Transactions</p>
-              <p className="text-white text-xl font-bold">{transactions.length}</p>
+              <ArrowDownLeft className="h-8 w-8 text-orange-400 mx-auto mb-2" />
+              <p className="text-orange-400 text-sm font-medium">Pending Requests</p>
+              <p className="text-white text-xl font-bold">
+                {paymentRequests.filter(r => r.recipientId === auth.currentUser?.uid && r.status === 'pending').length}
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-4 gap-6">
           {/* Virtual Card */}
           <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
             <CardHeader>
@@ -833,6 +1200,99 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </CardContent>
           </Card>
 
+          {/* Credit Score Section */}
+          <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center justify-between">
+                <div className="flex items-center">
+                  <Award className="h-5 w-5 mr-2" />
+                  Your Credit Score
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-yellow-400">{userData.creditScore || 300}</span>
+                  <span className="text-gray-400 text-sm">/1000</span>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="w-full bg-gray-700 rounded-full h-3">
+                <div
+                  className={`h-3 rounded-full transition-all duration-500 ${
+                    (userData.creditScore || 300) >= 700
+                      ? 'bg-green-500'
+                      : (userData.creditScore || 300) >= 600
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
+                  }`}
+                  style={{ width: `${((userData.creditScore || 300) / 1000) * 100}%` }}
+                ></div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Rating</span>
+                  <span className={`font-medium ${
+                    (userData.creditScore || 300) >= 900 ? 'text-green-400' :
+                    (userData.creditScore || 300) >= 800 ? 'text-blue-400' :
+                    (userData.creditScore || 300) >= 700 ? 'text-green-400' :
+                    (userData.creditScore || 300) >= 600 ? 'text-yellow-400' :
+                    (userData.creditScore || 300) >= 500 ? 'text-orange-400' : 'text-red-400'
+                  }`}>
+                    {(userData.creditScore || 300) >= 900 ? 'Excellent' :
+                     (userData.creditScore || 300) >= 800 ? 'Very Good' :
+                     (userData.creditScore || 300) >= 700 ? 'Good' :
+                     (userData.creditScore || 300) >= 600 ? 'Fair' :
+                     (userData.creditScore || 300) >= 500 ? 'Average' : 'Poor'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Total Transactions</span>
+                  <span className="text-white">{userData.transactionCount || 0}</span>
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Transaction Volume</span>
+                  <span className="text-white">₹{(userData.totalTransactionAmount || 0).toLocaleString()}</span>
+                </div>
+
+                <div className="bg-gray-800 p-3 rounded-lg mt-4">
+                  <p className="text-gray-300 text-sm mb-2">💡 Improve your score:</p>
+                  <ul className="text-gray-400 text-xs space-y-1">
+                    <li>• Make more transactions</li>
+                    <li>• Increase transaction amounts</li>
+                    <li>• Use Pay Later responsibly</li>
+                    <li>• Maintain payment consistency</li>
+                  </ul>
+                  <div className="flex space-x-2 mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                      onClick={() => {
+                        setActiveTab("send")
+                        document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+                      }}
+                    >
+                      Send Money
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                      onClick={() => {
+                        setActiveTab("request")
+                        document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+                      }}
+                    >
+                      Request Money
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Payment Section */}
           <Card className="border border-gray-700 bg-gray-900 lg:col-span-1" id="payment-section">
             <CardHeader>
@@ -852,6 +1312,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 >
                   <Clock className="h-4 w-4 mr-2" />
                   Pay Later
+                </Button>
+                <Button
+                  variant={activeTab === "request" ? "default" : "ghost"}
+                  onClick={() => setActiveTab("request")}
+                  className={`flex-1 ${activeTab === "request" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Request
                 </Button>
               </div>
             </CardHeader>
@@ -1058,6 +1526,80 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 </div>
               )}
 
+              {activeTab === "request" && (
+                <form onSubmit={handlePaymentRequest} className="space-y-4">
+                  <div className="bg-gradient-to-r from-orange-900/20 to-yellow-900/20 p-4 rounded-lg mb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-white font-semibold mb-2">💸 Request Money</h3>
+                        <p className="text-gray-400 text-sm">Ask other users to send you money</p>
+                      </div>
+                      <DollarSign className="h-8 w-8 text-orange-400" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="request-recipient" className="text-white">
+                      Request From (Card ID)
+                    </Label>
+                    <Select value={requestRecipientCardId} onValueChange={setRequestRecipientCardId} required>
+                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                        <SelectValue placeholder="Select a user to request money from" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        {availableUsers.map((user) => (
+                          <SelectItem key={user.cardId} value={user.cardId} className="text-white hover:bg-gray-700">
+                            {user.name} (@{user.cardId})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="request-amount" className="text-white">
+                      Amount (₹)
+                    </Label>
+                    <Input
+                      id="request-amount"
+                      type="number"
+                      value={requestAmount}
+                      onChange={(e) => setRequestAmount(e.target.value)}
+                      placeholder="Enter amount to request"
+                      className="bg-gray-800 border-gray-600 text-white"
+                      min="1"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="request-message" className="text-white">
+                      Message (Optional)
+                    </Label>
+                    <Input
+                      id="request-message"
+                      type="text"
+                      value={requestMessage}
+                      onChange={(e) => setRequestMessage(e.target.value)}
+                      placeholder="Add a note for your request"
+                      className="bg-gray-800 border-gray-600 text-white"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={loading || availableUsers.length === 0}
+                    className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 text-white hover:from-orange-700 hover:to-yellow-700"
+                  >
+                    {loading ? "Sending Request..." : "Send Request"}
+                  </Button>
+
+                  {availableUsers.length === 0 && (
+                    <p className="text-gray-400 text-sm text-center">No users available to request money from</p>
+                  )}
+                </form>
+              )}
+
               {message && (
                 <div
                   className={`p-3 rounded mt-4 ${
@@ -1107,16 +1649,29 @@ export function Dashboard({ onLogout }: DashboardProps) {
                           <p className="text-gray-400 text-sm font-mono">@{user.cardId}</p>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        className="bg-white text-black hover:bg-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          quickPayUser(user.cardId)
-                        }}
-                      >
-                        Pay
-                      </Button>
+                      <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          className="bg-white text-black hover:bg-gray-200"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            quickPayUser(user.cardId)
+                          }}
+                        >
+                          Pay
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            quickRequestUser(user.cardId)
+                          }}
+                        >
+                          Request
+                        </Button>
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -1130,6 +1685,102 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </CardContent>
           </Card>
         </div>
+
+        {/* Pending Payment Requests */}
+        {paymentRequests.length > 0 && (
+          <Card className="border border-gray-700 bg-gray-900 mt-8">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center justify-between">
+                <div className="flex items-center">
+                  <ArrowDownLeft className="h-5 w-5 mr-2" />
+                  Payment Requests
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                  <span className="text-orange-400 text-sm font-medium">
+                    {paymentRequests.filter(r => r.recipientId === auth.currentUser?.uid && r.status === 'pending').length} pending
+                  </span>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {paymentRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          request.recipientId === auth.currentUser?.uid
+                            ? "bg-orange-500/20 text-orange-400"
+                            : "bg-blue-500/20 text-blue-400"
+                        }`}
+                      >
+                        {request.recipientId === auth.currentUser?.uid ? (
+                          <ArrowDownLeft className="h-5 w-5" />
+                        ) : (
+                          <DollarSign className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold">
+                          {request.recipientId === auth.currentUser?.uid
+                            ? `Request from @${request.requesterCardId}`
+                            : `Request to @${request.recipientCardId}`}
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-gray-400 text-sm">{new Date(request.timestamp).toLocaleString()}</p>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              request.status === 'pending'
+                                ? 'bg-yellow-600 text-yellow-100'
+                                : request.status === 'approved'
+                                ? 'bg-green-600 text-green-100'
+                                : 'bg-red-600 text-red-100'
+                            }`}
+                          >
+                            {request.status}
+                          </span>
+                        </div>
+                        {request.message && (
+                          <p className="text-gray-300 text-sm mt-1">"{request.message}"</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right flex items-center space-x-3">
+                      <div>
+                        <p className="text-orange-400 font-bold text-lg">
+                          ₹{request.amount.toLocaleString()}
+                        </p>
+                      </div>
+                      {request.recipientId === auth.currentUser?.uid && request.status === 'pending' && (
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleRequestApproval(request, true)}
+                            className="bg-green-600 text-white hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRequestApproval(request, false)}
+                            className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Transaction History */}
         <Card className="border border-gray-700 bg-gray-900 mt-8">
@@ -1319,6 +1970,70 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 onClick={() => {
                   setShowPinVerification(false)
                   setPendingPayment(null)
+                  setVerifyPin('')
+                  setPinMessage('')
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Approval PIN Verification Dialog */}
+      <Dialog open={showRequestApproval} onOpenChange={() => {
+        setShowRequestApproval(false)
+        setPendingRequestApproval(null)
+        setVerifyPin('')
+        setPinMessage('')
+      }}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              Approve Payment Request
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter your PIN to approve this payment request of ₹{pendingRequestApproval?.amount.toLocaleString()} to @{pendingRequestApproval?.requesterCardId}
+              {pendingRequestApproval?.message && (
+                <div className="mt-2 p-2 bg-gray-800 rounded text-sm">
+                  Message: "{pendingRequestApproval.message}"
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-4">Enter your 4-digit PIN</p>
+              <PinInput
+                onComplete={executeRequestApproval}
+                value={verifyPin}
+                onChange={setVerifyPin}
+                className="mb-4"
+              />
+            </div>
+
+            {pinMessage && (
+              <div className="p-3 rounded text-center bg-red-900/50 text-red-300 border border-red-700">
+                {pinMessage}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={() => executeRequestApproval(verifyPin)}
+                disabled={verifyPin.length !== 4 || loading}
+                className="flex-1 bg-green-600 text-white hover:bg-green-700"
+              >
+                {loading ? 'Processing...' : 'Approve & Pay'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowRequestApproval(false)
+                  setPendingRequestApproval(null)
                   setVerifyPin('')
                   setPinMessage('')
                 }}
