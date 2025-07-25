@@ -1046,36 +1046,36 @@ export function Dashboard({ onLogout }: DashboardProps) {
       <div className="container mx-auto px-4 py-8">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <Card className="border border-gray-700 bg-gradient-to-br from-blue-900/20 to-blue-800/20">
+          <Card className="border border-white/20 bg-white text-black">
             <CardContent className="p-4 text-center">
-              <Wallet className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-              <p className="text-blue-400 text-sm font-medium">Balance</p>
-              <p className="text-white text-xl font-bold">₹{userData.balance.toLocaleString()}</p>
+              <Wallet className="h-8 w-8 text-black mx-auto mb-2" />
+              <p className="text-gray-700 text-sm font-medium">Balance</p>
+              <p className="text-black text-xl font-bold">₹{userData.balance.toLocaleString()}</p>
             </CardContent>
           </Card>
 
-          <Card className="border border-gray-700 bg-gradient-to-br from-green-900/20 to-green-800/20">
+          <Card className="border border-gray-300 bg-black text-white">
             <CardContent className="p-4 text-center">
-              <Clock className="h-8 w-8 text-green-400 mx-auto mb-2" />
-              <p className="text-green-400 text-sm font-medium">Pay Later</p>
+              <Clock className="h-8 w-8 text-white mx-auto mb-2" />
+              <p className="text-gray-300 text-sm font-medium">Pay Later</p>
               <p className="text-white text-xl font-bold">
                 ₹{((userData.payLaterLimit || 0) - (userData.payLaterUsed || 0)).toLocaleString()}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border border-gray-700 bg-gradient-to-br from-purple-900/20 to-purple-800/20">
+          <Card className="border border-white/20 bg-white text-black">
             <CardContent className="p-4 text-center">
-              <Users className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-              <p className="text-purple-400 text-sm font-medium">Active Users</p>
-              <p className="text-white text-xl font-bold">{availableUsers.length}</p>
+              <Users className="h-8 w-8 text-black mx-auto mb-2" />
+              <p className="text-gray-700 text-sm font-medium">Active Users</p>
+              <p className="text-black text-xl font-bold">{availableUsers.length}</p>
             </CardContent>
           </Card>
 
-          <Card className="border border-gray-700 bg-gradient-to-br from-yellow-900/20 to-yellow-800/20">
+          <Card className="border border-gray-300 bg-black text-white">
             <CardContent className="p-4 text-center">
-              <Award className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
-              <p className="text-yellow-400 text-sm font-medium">Credit Score</p>
+              <Award className="h-8 w-8 text-white mx-auto mb-2" />
+              <p className="text-gray-300 text-sm font-medium">Credit Score</p>
               <p className="text-white text-xl font-bold">{userData.creditScore || 300}</p>
               <p className="text-gray-400 text-xs mt-1">
                 {(userData.creditScore || 300) >= 700 ? 'Good' : (userData.creditScore || 300) >= 600 ? 'Fair' : 'Poor'}
@@ -1083,11 +1083,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </CardContent>
           </Card>
 
-          <Card className="border border-gray-700 bg-gradient-to-br from-orange-900/20 to-orange-800/20">
+          <Card className="border border-white/20 bg-white text-black">
             <CardContent className="p-4 text-center">
-              <ArrowDownLeft className="h-8 w-8 text-orange-400 mx-auto mb-2" />
-              <p className="text-orange-400 text-sm font-medium">Pending Requests</p>
-              <p className="text-white text-xl font-bold">
+              <ArrowDownLeft className="h-8 w-8 text-black mx-auto mb-2" />
+              <p className="text-gray-700 text-sm font-medium">Pending Requests</p>
+              <p className="text-black text-xl font-bold">
                 {paymentRequests.filter(r => r.recipientId === auth.currentUser?.uid && r.status === 'pending').length}
               </p>
             </CardContent>
