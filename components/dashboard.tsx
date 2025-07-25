@@ -375,12 +375,23 @@ export function Dashboard({ onLogout }: DashboardProps) {
       const transactionCount = allTransactions.length
       const creditScore = calculateCreditScore(totalAmount, transactionCount)
 
+      // Get current credit score to check for improvements
+      const currentUserDoc = await getDoc(doc(db, "users", userId))
+      const currentData = currentUserDoc.data()
+      const previousScore = currentData?.creditScore || 300
+
       // Update user's credit score
       await updateDoc(doc(db, "users", userId), {
         creditScore,
         totalTransactionAmount: totalAmount,
         transactionCount
       })
+
+      // Show notification for score improvement
+      if (userId === auth.currentUser?.uid && creditScore > previousScore) {
+        const improvement = creditScore - previousScore
+        addNotification('credit', improvement, `Credit score improved by ${improvement} points!`)
+      }
 
       console.log(`Credit score updated: ${creditScore} (Total: ₹${totalAmount}, Count: ${transactionCount})`)
     } catch (error) {
