@@ -29,7 +29,7 @@ export function useBiometricAuth() {
 
   // Register biometric credentials
   const registerBiometric = useCallback(async (userId: string): Promise<BiometricAuthResult> => {
-    if (!checkSupport()) {
+    if (typeof window === "undefined" || !checkSupport()) {
       return { success: false, error: "Biometric authentication not supported" }
     }
 
