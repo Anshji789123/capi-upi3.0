@@ -145,6 +145,10 @@ export function useBiometricAuth() {
 
   // Check if user has registered biometrics
   const checkRegistration = useCallback((userId: string) => {
+    if (typeof window === "undefined") {
+      setIsRegistered(false)
+      return false
+    }
     const hasCredential = !!localStorage.getItem(`biometric_${userId}`)
     setIsRegistered(hasCredential)
     return hasCredential
