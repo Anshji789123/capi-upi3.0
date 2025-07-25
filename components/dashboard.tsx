@@ -944,9 +944,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
           <Card className="border border-gray-700 bg-gradient-to-br from-orange-900/20 to-orange-800/20">
             <CardContent className="p-4 text-center">
-              <TrendingUp className="h-8 w-8 text-orange-400 mx-auto mb-2" />
-              <p className="text-orange-400 text-sm font-medium">Transactions</p>
-              <p className="text-white text-xl font-bold">{transactions.length}</p>
+              <ArrowDownLeft className="h-8 w-8 text-orange-400 mx-auto mb-2" />
+              <p className="text-orange-400 text-sm font-medium">Pending Requests</p>
+              <p className="text-white text-xl font-bold">
+                {paymentRequests.filter(r => r.recipientId === auth.currentUser?.uid && r.status === 'pending').length}
+              </p>
             </CardContent>
           </Card>
         </div>
