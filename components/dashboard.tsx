@@ -1442,6 +1442,102 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </Card>
         </div>
 
+        {/* Pending Payment Requests */}
+        {paymentRequests.length > 0 && (
+          <Card className="border border-gray-700 bg-gray-900 mt-8">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center justify-between">
+                <div className="flex items-center">
+                  <ArrowDownLeft className="h-5 w-5 mr-2" />
+                  Payment Requests
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                  <span className="text-orange-400 text-sm font-medium">
+                    {paymentRequests.filter(r => r.recipientId === auth.currentUser?.uid && r.status === 'pending').length} pending
+                  </span>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {paymentRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          request.recipientId === auth.currentUser?.uid
+                            ? "bg-orange-500/20 text-orange-400"
+                            : "bg-blue-500/20 text-blue-400"
+                        }`}
+                      >
+                        {request.recipientId === auth.currentUser?.uid ? (
+                          <ArrowDownLeft className="h-5 w-5" />
+                        ) : (
+                          <DollarSign className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold">
+                          {request.recipientId === auth.currentUser?.uid
+                            ? `Request from @${request.requesterCardId}`
+                            : `Request to @${request.recipientCardId}`}
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-gray-400 text-sm">{new Date(request.timestamp).toLocaleString()}</p>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              request.status === 'pending'
+                                ? 'bg-yellow-600 text-yellow-100'
+                                : request.status === 'approved'
+                                ? 'bg-green-600 text-green-100'
+                                : 'bg-red-600 text-red-100'
+                            }`}
+                          >
+                            {request.status}
+                          </span>
+                        </div>
+                        {request.message && (
+                          <p className="text-gray-300 text-sm mt-1">"{request.message}"</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right flex items-center space-x-3">
+                      <div>
+                        <p className="text-orange-400 font-bold text-lg">
+                          ₹{request.amount.toLocaleString()}
+                        </p>
+                      </div>
+                      {request.recipientId === auth.currentUser?.uid && request.status === 'pending' && (
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleRequestApproval(request, true)}
+                            className="bg-green-600 text-white hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRequestApproval(request, false)}
+                            className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Transaction History */}
         <Card className="border border-gray-700 bg-gray-900 mt-8">
           <CardHeader>
