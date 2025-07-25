@@ -194,8 +194,17 @@ export function Dashboard({ onLogout }: DashboardProps) {
           setUserData(newUserData)
           console.log("Created new user document:", newUserData)
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching user data:", error)
+
+        // Handle offline scenarios gracefully
+        if (error.code === 'unavailable' || error.message?.includes('offline')) {
+          setMessage("⚠️ Working in offline mode. Some features may be limited.")
+        } else if (error.code === 'permission-denied') {
+          setMessage("❌ Permission denied. Please check your authentication.")
+        } else {
+          setMessage("❌ Unable to load user data. Please check your connection and try again.")
+        }
       } finally {
         setDataLoading(false)
       }
