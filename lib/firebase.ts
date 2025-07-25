@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
-import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore"
+import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableNetwork, disableNetwork } from "firebase/firestore"
 import { getAnalytics } from "firebase/analytics"
 
 const firebaseConfig = {
