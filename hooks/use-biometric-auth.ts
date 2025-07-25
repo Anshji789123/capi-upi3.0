@@ -92,12 +92,16 @@ export function useBiometricAuth() {
 
       let errorMessage = "Failed to register biometric authentication"
 
+      const isInFrame = typeof window !== "undefined" && window !== window.top
+
       if (error.name === "NotAllowedError") {
-        errorMessage = "Biometric authentication was cancelled or denied"
-      } else if (error.message?.includes("publickey-credentials-create")) {
-        errorMessage = "Biometric authentication is not available in this browser context. Please try opening the page in a new tab or use a supported browser."
-      } else if (error.message?.includes("Permissions Policy")) {
-        errorMessage = "Biometric authentication requires additional permissions. Please try opening the page directly in your browser."
+        errorMessage = isInFrame
+          ? "Biometric authentication is not available in embedded contexts. Please open this page in a new tab."
+          : "Biometric authentication was cancelled or denied"
+      } else if (error.message?.includes("publickey-credentials-create") || error.message?.includes("Permissions Policy")) {
+        errorMessage = isInFrame
+          ? "Biometric authentication requires opening this page directly in your browser. Please open in a new tab."
+          : "Biometric authentication is not available in this browser context. Please use a supported browser."
       }
 
       return {
