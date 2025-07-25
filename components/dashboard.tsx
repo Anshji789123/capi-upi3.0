@@ -1090,7 +1090,12 @@ export function Dashboard({ onLogout }: DashboardProps) {
             <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
               <Bell className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white"
+              onClick={() => setShowSettings(true)}
+            >
               <Settings className="h-4 w-4" />
             </Button>
             <Button
