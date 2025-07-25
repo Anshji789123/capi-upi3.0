@@ -1988,6 +1988,45 @@ export function Dashboard({ onLogout }: DashboardProps) {
         </Card>
       </div>
 
+      {/* Footer Section */}
+      <div className="container mx-auto px-4 py-6 mt-8">
+        <Card className="border border-gray-700 bg-gray-900">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center">
+                  <Shield className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold">Card Security</h3>
+                  <p className="text-gray-400 text-sm">Block your card immediately if your details are compromised</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                onClick={() => setShowBlockCard(true)}
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                Block Card Now
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Chatbot Button */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button
+          onClick={() => setShowChatbot(true)}
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </Button>
+      </div>
+
       {/* PIN Setup Dialog */}
       <Dialog open={showPinSetup} onOpenChange={setShowPinSetup}>
         <DialogContent className="bg-gray-900 border-gray-700 text-white">
