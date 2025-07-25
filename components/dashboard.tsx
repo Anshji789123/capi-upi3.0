@@ -2072,6 +2072,29 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Authentication Dialog */}
+      {pendingPayment && (
+        <PaymentAuth
+          isOpen={showPaymentAuth}
+          onClose={() => {
+            setShowPaymentAuth(false)
+            setPendingPayment(null)
+          }}
+          onSuccess={handlePaymentAuthSuccess}
+          amount={pendingPayment.amount}
+          recipient={pendingPayment.recipientCardId}
+          loading={loading}
+        />
+      )}
+
+      {/* Biometric Setup Dialog */}
+      <BiometricSetup
+        userId={auth.currentUser?.uid || ""}
+        isOpen={showBiometricSetup}
+        onClose={() => setShowBiometricSetup(false)}
+        onSuccess={() => setShowBiometricSetup(false)}
+      />
     </div>
   )
 }
