@@ -147,6 +147,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [chatMessages, setChatMessages] = useState<Array<{id: string, text: string, isUser: boolean, timestamp: Date}>>([])
   const [chatInput, setChatInput] = useState("")
 
+  // Notification dropdown state
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false)
+
   // Firebase connection status
   const { isOnline, lastError } = useFirebaseConnection()
   const [pinSetupStep, setPinSetupStep] = useState<'create' | 'confirm'>('create')
