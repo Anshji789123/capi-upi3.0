@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { onAuthStateChanged, type User } from "firebase/auth"
 import { auth } from "@/lib/firebase"
-import { ArrowRight, CreditCard, Users, Brain, Star, Zap, Shield, Hash, Smartphone, Globe } from "lucide-react"
+import { ArrowRight, CreditCard, Users, Brain, Star, Zap, Shield, Hash, Smartphone, Globe, Link2, Eye, UserCheck, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AuthModal } from "@/components/auth-modal"
