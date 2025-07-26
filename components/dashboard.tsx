@@ -444,7 +444,8 @@ export function Dashboard({ onLogout }: DashboardProps) {
       // Show notification for score improvement
       if (userId === auth.currentUser?.uid && creditScore > previousScore) {
         const improvement = creditScore - previousScore
-        addNotification('credit', improvement, `Credit score improved by ${improvement} points!`)
+        // We'll show this as a regular credit notification for now
+        addNotification('credit', improvement)
       }
 
       console.log(`Credit score updated: ${creditScore} (Total: ₹${totalAmount}, Count: ${transactionCount})`)
