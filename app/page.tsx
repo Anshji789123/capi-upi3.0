@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { onAuthStateChanged, type User } from "firebase/auth"
 import { auth } from "@/lib/firebase"
-import { ArrowRight, CreditCard, Users, Brain, Star, Zap, Shield, Hash, Smartphone, Globe } from "lucide-react"
+import { ArrowRight, CreditCard, Users, Brain, Star, Zap, Shield, Hash, Smartphone, Globe, Link2, Eye, UserCheck, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AuthModal } from "@/components/auth-modal"
@@ -104,9 +104,9 @@ export default function HomePage() {
       <section id="features" className="py-20 bg-black">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Why Choose CAPI?</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Why CAPI is Different</h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Experience card-based payments with the simplicity of UPI and the power of your existing cards
+              Advanced features that make CAPI the safest and most convenient payment solution
             </p>
           </div>
 
@@ -114,11 +114,11 @@ export default function HomePage() {
             <Card className="border border-gray-700 bg-gray-900 hover:bg-gray-800 transition-all duration-300 group">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <Hash className="h-8 w-8 text-black" />
+                  <Link2 className="h-8 w-8 text-black" />
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-white">Unique Card ID</h3>
+                <h3 className="text-xl font-bold mb-4 text-white">One-Time Bank Link</h3>
                 <p className="text-gray-400">
-                  Get assigned a unique Card ID to receive payments directly to your cards
+                  Instantly generate a virtual card by linking your bank account just once.
                 </p>
               </CardContent>
             </Card>
@@ -126,32 +126,49 @@ export default function HomePage() {
             <Card className="border border-gray-700 bg-gray-900 hover:bg-gray-800 transition-all duration-300 group">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <CreditCard className="h-8 w-8 text-black" />
+                  <Hash className="h-8 w-8 text-black" />
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-white">All Card Networks</h3>
-                <p className="text-gray-400">Link Visa, Mastercard, and RuPay cards seamlessly to your CAPI ID</p>
+                <h3 className="text-xl font-bold mb-4 text-white">Unique Card ID</h3>
+                <p className="text-gray-400">
+                  Send or receive money using a smart Card ID like ansh@cardid — no need for UPI, phone number, or bank details.
+                </p>
               </CardContent>
             </Card>
 
             <Card className="border border-gray-700 bg-gray-900 hover:bg-gray-800 transition-all duration-300 group">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <Users className="h-8 w-8 text-black" />
+                  <Eye className="h-8 w-8 text-black" />
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-white">P2P Payments</h3>
-                <p className="text-gray-400">Send money to friends using just their Card ID - no bank details needed</p>
+                <h3 className="text-xl font-bold mb-4 text-white">Smart Privacy + Full Traceability</h3>
+                <p className="text-gray-400">
+                  Stay anonymous to others, but all transactions are traceable end-to-end using KYC, IP, and device tracking.
+                </p>
               </CardContent>
             </Card>
 
             <Card className="border border-gray-700 bg-gray-900 hover:bg-gray-800 transition-all duration-300 group">
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <Brain className="h-8 w-8 text-black" />
+                  <AlertTriangle className="h-8 w-8 text-black" />
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-white">AI-Powered</h3>
-                <p className="text-gray-400">Smart routing and fraud detection with latest AI technology</p>
+                <h3 className="text-xl font-bold mb-4 text-white">Built-in Scam Protection</h3>
+                <p className="text-gray-400">
+                  If fraud occurs, we trace it instantly, freeze the scammer's access, and alert the proper authorities.
+                </p>
               </CardContent>
             </Card>
+          </div>
+
+          <div className="text-center mt-12">
+            <Button
+              size="lg"
+              className="bg-white text-black hover:bg-gray-200 px-8 py-4 text-lg font-semibold group"
+              onClick={() => setShowAuthModal(true)}
+            >
+              Get My Card ID
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
           </div>
         </div>
       </section>
@@ -356,6 +373,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+
 
       {/* CTA Section */}
       <section className="py-20 bg-gray-900 border-t border-gray-800">
