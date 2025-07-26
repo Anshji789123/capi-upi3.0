@@ -368,6 +368,19 @@ export function Dashboard({ onLogout }: DashboardProps) {
     return () => clearInterval(interval)
   }, [transactions])
 
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (showNotificationDropdown && !target.closest('.notification-dropdown')) {
+        setShowNotificationDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showNotificationDropdown])
+
   const copyCardId = () => {
     if (userData?.cardId) {
       navigator.clipboard.writeText(userData.cardId)
