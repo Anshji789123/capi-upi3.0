@@ -644,10 +644,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
     setNotifications(prev => [notification, ...prev.slice(0, 4)]) // Keep only last 5 notifications
 
-    // Auto-remove notification after 5 seconds
+    // Auto-remove notification after 10 seconds
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== notification.id))
-    }, 5000)
+    }, 10000)
   }
 
   const handlePinSetup = async () => {
