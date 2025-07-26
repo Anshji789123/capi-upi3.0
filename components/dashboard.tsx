@@ -1194,7 +1194,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
             <span className="text-xl font-bold text-white">CAPI Dashboard</span>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="relative">
+            <div className="relative notification-dropdown">
               <Button
                 variant="ghost"
                 size="sm"
