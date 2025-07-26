@@ -1657,7 +1657,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                       max={userData.balance}
                       required
                     />
-                    <p className="text-gray-400 text-sm mt-1">Available: ₹{userData.balance.toLocaleString()}</p>
+                    <p className="text-gray-400 text-sm mt-1">Available: ��{userData.balance.toLocaleString()}</p>
                   </div>
 
                   <Button type="submit" disabled={loading} className="w-full bg-white text-black hover:bg-gray-200">
@@ -2179,6 +2179,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 <div>
                   <h3 className="text-white font-semibold">Card Security</h3>
                   <p className="text-gray-400 text-sm">Block your card immediately if your details are compromised</p>
+                  <p className="text-gray-500 text-xs mt-1">Engineered by Ansh Chauhan</p>
                 </div>
               </div>
               <Button
