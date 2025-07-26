@@ -441,12 +441,8 @@ export function Dashboard({ onLogout }: DashboardProps) {
         transactionCount
       })
 
-      // Show notification for score improvement
-      if (userId === auth.currentUser?.uid && creditScore > previousScore) {
-        const improvement = creditScore - previousScore
-        // We'll show this as a regular credit notification for now
-        addNotification('credit', improvement)
-      }
+      // Credit score improvements no longer show as notifications
+      // This was causing confusion with small amounts like 9-12 rupees
 
       console.log(`Credit score updated: ${creditScore} (Total: ₹${totalAmount}, Count: ${transactionCount})`)
     } catch (error) {
