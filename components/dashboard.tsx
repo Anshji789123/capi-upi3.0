@@ -1181,9 +1181,84 @@ export function Dashboard({ onLogout }: DashboardProps) {
             <span className="text-xl font-bold text-white">CAPI Dashboard</span>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-              <Bell className="h-4 w-4" />
-            </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-400 hover:text-white relative"
+                onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+              >
+                <Bell className="h-4 w-4" />
+                {notifications.length > 0 && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">{notifications.length}</span>
+                  </div>
+                )}
+              </Button>
+
+              {showNotificationDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
+                  <div className="p-4 border-b border-gray-700">
+                    <h3 className="text-white font-semibold">Recent Activity</h3>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className="p-4 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-b-0"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              notification.type === 'credit' ? 'bg-green-600' : 'bg-red-600'
+                            }`}>
+                              {notification.type === 'credit' ? (
+                                <Plus className="h-4 w-4 text-white" />
+                              ) : (
+                                <Send className="h-4 w-4 text-white" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-white font-semibold text-sm">
+                                {notification.type === 'credit' ? 'Money Received' : 'Money Sent'}
+                              </p>
+                              <p className="text-gray-400 text-sm">
+                                ₹{notification.amount.toLocaleString()}
+                                {notification.cardId && ` ${notification.type === 'credit' ? 'from' : 'to'} @${notification.cardId}`}
+                              </p>
+                              <p className="text-gray-500 text-xs">
+                                {new Date(notification.timestamp).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center">
+                        <Bell className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                        <p className="text-gray-400">No recent activity</p>
+                        <p className="text-gray-500 text-sm">Your transactions will appear here</p>
+                      </div>
+                    )}
+                  </div>
+                  {notifications.length > 0 && (
+                    <div className="p-4 border-t border-gray-700">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full text-gray-400 hover:text-white"
+                        onClick={() => {
+                          setNotifications([])
+                          setShowNotificationDropdown(false)
+                        }}
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="sm"
