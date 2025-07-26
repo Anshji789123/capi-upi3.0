@@ -374,78 +374,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Key Benefits Section */}
-      <section className="py-20 bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Why CAPI is Different</h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Advanced features that make CAPI the safest and most convenient payment solution
-            </p>
-          </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-            <Card className="border border-gray-700 bg-gray-900 hover:bg-gray-800 transition-all duration-300 group">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <Link2 className="h-8 w-8 text-black" />
-                </div>
-                <h3 className="text-xl font-bold mb-4 text-white">One-Time Bank Link</h3>
-                <p className="text-gray-400">
-                  Instantly generate a virtual card by linking your bank account just once.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border border-gray-700 bg-gray-900 hover:bg-gray-800 transition-all duration-300 group">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <Hash className="h-8 w-8 text-black" />
-                </div>
-                <h3 className="text-xl font-bold mb-4 text-white">Unique Card ID</h3>
-                <p className="text-gray-400">
-                  Send or receive money using a smart Card ID like ansh@cardid — no need for UPI, phone number, or bank details.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border border-gray-700 bg-gray-900 hover:bg-gray-800 transition-all duration-300 group">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <Eye className="h-8 w-8 text-black" />
-                </div>
-                <h3 className="text-xl font-bold mb-4 text-white">Smart Privacy + Full Traceability</h3>
-                <p className="text-gray-400">
-                  Stay anonymous to others, but all transactions are traceable end-to-end using KYC, IP, and device tracking.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border border-gray-700 bg-gray-900 hover:bg-gray-800 transition-all duration-300 group">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <AlertTriangle className="h-8 w-8 text-black" />
-                </div>
-                <h3 className="text-xl font-bold mb-4 text-white">Built-in Scam Protection</h3>
-                <p className="text-gray-400">
-                  If fraud occurs, we trace it instantly, freeze the scammer's access, and alert the proper authorities.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="text-center mt-12">
-            <Button
-              size="lg"
-              className="bg-white text-black hover:bg-gray-200 px-8 py-4 text-lg font-semibold group"
-              onClick={() => setShowAuthModal(true)}
-            >
-              Get My Card ID
-              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="py-20 bg-gray-900 border-t border-gray-800">
