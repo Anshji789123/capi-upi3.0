@@ -16,9 +16,10 @@ interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  onAdminLogin?: () => void
 }
 
-export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onSuccess, onAdminLogin }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -40,6 +41,16 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     setError("")
 
     try {
+      // Check for admin credentials
+      if (email === "anshchauhan556@gmail.com" && password === "Ansh789@123") {
+        setLoading(false)
+        onClose()
+        if (onAdminLogin) {
+          onAdminLogin()
+        }
+        return
+      }
+
       if (isLogin) {
         // Sign in existing user
         const userCredential = await signInWithEmailAndPassword(auth, email, password)
@@ -56,8 +67,15 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             cardId,
             balance: 10000,
             createdAt: new Date().toISOString(),
+            isFrozen: false,
           })
           console.log("Created user data for existing user")
+        } else {
+          // Check if account is frozen
+          const userData = userDoc.data()
+          if (userData?.isFrozen) {
+            throw new Error("Your account has been frozen. Please contact support.")
+          }
         }
       } else {
         // Create new user
@@ -74,6 +92,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           cardId,
           balance: 10000,
           createdAt: new Date().toISOString(),
+          isFrozen: false,
         }
 
         console.log("Saving user data:", userData)

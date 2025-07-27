@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AuthModal } from "@/components/auth-modal"
 import { Dashboard } from "@/components/dashboard"
+import { AdminPanel } from "@/components/admin-panel"
 import Link from "next/link"
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -30,6 +32,10 @@ export default function HomePage() {
         <div className="text-white text-xl">Loading...</div>
       </div>
     )
+  }
+
+  if (showAdminPanel) {
+    return <AdminPanel />
   }
 
   if (user) {
@@ -616,6 +622,10 @@ export default function HomePage() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onSuccess={() => setShowAuthModal(false)}
+        onAdminLogin={() => {
+          setShowAuthModal(false)
+          setShowAdminPanel(true)
+        }}
       />
     </div>
   )
