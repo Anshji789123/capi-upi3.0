@@ -602,7 +602,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     const amount = Number.parseFloat(paymentAmount)
 
     if (amount <= 0) {
-      setMessage("❌ Please enter a valid amount")
+      setMessage("�� Please enter a valid amount")
       return
     }
 
@@ -1598,7 +1598,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6">
           {/* Virtual Card */}
           <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
             <CardHeader>
