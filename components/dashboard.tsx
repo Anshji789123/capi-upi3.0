@@ -1918,15 +1918,49 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     <Label htmlFor="recipient" className="text-white">
                       Recipient Card ID
                     </Label>
-                    <Input
-                      id="recipient"
-                      type="text"
-                      value={recipientCardId}
-                      onChange={(e) => setRecipientCardId(e.target.value)}
-                      placeholder="Enter recipient's Card ID (e.g., john123-capi)"
-                      className="bg-gray-800 border-gray-600 text-white"
-                      required
-                    />
+                    <Select value={recipientCardId} onValueChange={setRecipientCardId} required>
+                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                        <SelectValue placeholder="Select recipient or enter Card ID" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600 max-h-60 overflow-y-auto">
+                        {availableUsers.length > 0 && (
+                          <>
+                            <div className="px-2 py-1 text-xs text-gray-400 font-medium border-b border-gray-600">
+                              Live Users ({availableUsers.length} online)
+                            </div>
+                            {availableUsers.map((user) => (
+                              <SelectItem key={user.cardId} value={user.cardId} className="text-white hover:bg-gray-700">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                    {user.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">{user.name}</span>
+                                    <span className="text-gray-400 text-sm ml-2">@{user.cardId}</span>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                            <div className="px-2 py-1 text-xs text-gray-400 font-medium border-t border-gray-600 mt-1">
+                              Or enter Card ID manually
+                            </div>
+                          </>
+                        )}
+                        <SelectItem value="manual" className="text-blue-400 hover:bg-gray-700">
+                          ✏️ Enter Card ID manually
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {recipientCardId === "manual" && (
+                      <Input
+                        type="text"
+                        value=""
+                        onChange={(e) => setRecipientCardId(e.target.value)}
+                        placeholder="Enter recipient's Card ID (e.g., john123-capi)"
+                        className="bg-gray-800 border-gray-600 text-white mt-2"
+                        autoFocus
+                      />
+                    )}
                   </div>
 
                   {/* Sub-card selection */}
