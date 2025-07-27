@@ -1699,6 +1699,97 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </CardContent>
           </Card>
 
+          {/* Sub-Cards Section */}
+          <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center justify-between">
+                <div className="flex items-center">
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Sub-Cards
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSubCardDialog(true)}
+                  className="text-blue-400 hover:text-blue-300"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {userData.subCards && userData.subCards.length > 0 ? (
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {userData.subCards.map((subCard) => (
+                    <div
+                      key={subCard.id}
+                      className={`bg-gray-800 p-4 rounded-lg border ${subCard.isActive ? 'border-green-600/30' : 'border-red-600/30'}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="text-white font-semibold text-sm">{subCard.name}</h4>
+                          <p className="text-gray-400 text-xs font-mono">@{subCard.cardId}</p>
+                          <p className="text-gray-500 text-xs capitalize">{subCard.category}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleToggleSubCard(subCard.id)}
+                          className={`text-xs ${subCard.isActive ? 'text-green-400 hover:text-green-300' : 'text-red-400 hover:text-red-300'}`}
+                        >
+                          {subCard.isActive ? <Unlock className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Used</span>
+                          <span className="text-red-400">₹{subCard.used.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Available</span>
+                          <span className="text-green-400">₹{(subCard.limit - subCard.used).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Limit</span>
+                          <span className="text-white">₹{subCard.limit.toLocaleString()}</span>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              (subCard.used / subCard.limit) > 0.8 ? 'bg-red-500' :
+                              (subCard.used / subCard.limit) > 0.6 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min((subCard.used / subCard.limit) * 100, 100)}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-gray-500 text-center">
+                          {((subCard.used / subCard.limit) * 100).toFixed(1)}% used
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <CreditCard className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-2">No sub-cards created</p>
+                  <p className="text-gray-500 text-sm mb-4">Create sub-cards to manage spending by category</p>
+                  <Button
+                    onClick={() => setShowSubCardDialog(true)}
+                    className="bg-blue-600 text-white hover:bg-blue-700"
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Sub-Card
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Credit Score Section */}
           <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
             <CardHeader>
