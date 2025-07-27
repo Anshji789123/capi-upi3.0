@@ -1971,7 +1971,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                         userData.balance}
                       required
                     />
-                    <p className="text-gray-400 text-sm mt-1">Available: ��{userData.balance.toLocaleString()}</p>
+                    <p className="text-gray-400 text-sm mt-1">Available: ₹{selectedSubCard ? ((userData.subCards?.find(sc => sc.id === selectedSubCard)?.limit || 0) - (userData.subCards?.find(sc => sc.id === selectedSubCard)?.used || 0)).toLocaleString() : userData.balance.toLocaleString()}{selectedSubCard && (<span className="text-blue-400 ml-2">({userData.subCards?.find(sc => sc.id === selectedSubCard)?.name})</span>)}</p>
                   </div>
 
                   <Button type="submit" disabled={loading} className="w-full bg-white text-black hover:bg-gray-200">
