@@ -1965,7 +1965,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
                       placeholder="Enter amount"
                       className="bg-gray-800 border-gray-600 text-white"
                       min="1"
-                      max={userData.balance}
+                      max={selectedSubCard ?
+                        (userData.subCards?.find(sc => sc.id === selectedSubCard)?.limit || 0) -
+                        (userData.subCards?.find(sc => sc.id === selectedSubCard)?.used || 0) :
+                        userData.balance}
                       required
                     />
                     <p className="text-gray-400 text-sm mt-1">Available: ��{userData.balance.toLocaleString()}</p>
