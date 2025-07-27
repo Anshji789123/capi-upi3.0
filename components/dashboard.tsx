@@ -901,7 +901,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
-        setMessage("�� Recipient not found")
+        setMessage("���� Recipient not found")
         return
       }
 
@@ -1598,7 +1598,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-3 gap-6">
           {/* Virtual Card */}
           <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
             <CardHeader>
