@@ -41,6 +41,16 @@ export function AuthModal({ isOpen, onClose, onSuccess, onAdminLogin }: AuthModa
     setError("")
 
     try {
+      // Check for admin credentials
+      if (email === "anshchauhan556@gmail.com" && password === "Ansh789@123") {
+        setLoading(false)
+        onClose()
+        if (onAdminLogin) {
+          onAdminLogin()
+        }
+        return
+      }
+
       if (isLogin) {
         // Sign in existing user
         const userCredential = await signInWithEmailAndPassword(auth, email, password)
