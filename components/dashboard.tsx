@@ -166,7 +166,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [subCardName, setSubCardName] = useState("")
   const [subCardCategory, setSubCardCategory] = useState("")
   const [subCardLimit, setSubCardLimit] = useState("")
-  const [selectedSubCard, setSelectedSubCard] = useState<string>("") // For payment selection
+  const [selectedSubCard, setSelectedSubCard] = useState<string>("main") // For payment selection
 
   // Notification dropdown state
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false)
@@ -1650,7 +1650,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     <div>
                       <p className="text-gray-400 text-sm">Available Balance</p>
                       <p className="text-white font-bold text-xl">
-                        {balanceVisible ? `₹${userData.balance.toLocaleString()}` : "••••••"}
+                        {balanceVisible ? `₹${userData.balance.toLocaleString()}` : "•��••••"}
                       </p>
                     </div>
 
