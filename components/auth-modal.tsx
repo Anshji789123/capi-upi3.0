@@ -92,6 +92,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, onAdminLogin }: AuthModa
           cardId,
           balance: 10000,
           createdAt: new Date().toISOString(),
+          isFrozen: false,
         }
 
         console.log("Saving user data:", userData)
