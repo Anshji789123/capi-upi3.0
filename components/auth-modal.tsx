@@ -19,7 +19,7 @@ interface AuthModalProps {
   onAdminLogin?: () => void
 }
 
-export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onSuccess, onAdminLogin }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
