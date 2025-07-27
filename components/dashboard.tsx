@@ -1388,6 +1388,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
             <span className="text-xl font-bold text-white">CAPI Dashboard</span>
           </div>
           <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white"
+              onClick={() => setShowCreditScore(true)}
+            >
+              <Award className="h-4 w-4" />
+            </Button>
             <div className="relative notification-dropdown">
               <Button
                 variant="ghost"
