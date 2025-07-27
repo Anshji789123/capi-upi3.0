@@ -3005,6 +3005,128 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Sub-Card Creation Dialog */}
+      <Dialog open={showSubCardDialog} onOpenChange={setShowSubCardDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <CreditCard className="h-5 w-5 mr-2" />
+              Create Sub-Card
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Create a sub-card to manage spending in specific categories with set limits
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 p-4 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <Target className="h-8 w-8 text-blue-400" />
+                <div>
+                  <h3 className="text-white font-semibold">Budget Control</h3>
+                  <p className="text-gray-300 text-sm">Set spending limits for different categories like food, shopping, entertainment</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="subcard-name" className="text-white">
+                Sub-Card Name
+              </Label>
+              <Input
+                id="subcard-name"
+                type="text"
+                value={subCardName}
+                onChange={(e) => setSubCardName(e.target.value)}
+                placeholder="e.g., Food Budget, Shopping"
+                className="bg-gray-800 border-gray-600 text-white"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="subcard-category" className="text-white">
+                Category
+              </Label>
+              <Select value={subCardCategory} onValueChange={setSubCardCategory} required>
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue placeholder="Select spending category" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="food">Food & Dining</SelectItem>
+                  <SelectItem value="shopping">Shopping</SelectItem>
+                  <SelectItem value="entertainment">Entertainment</SelectItem>
+                  <SelectItem value="transport">Transport</SelectItem>
+                  <SelectItem value="health">Healthcare</SelectItem>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="bills">Bills & Utilities</SelectItem>
+                  <SelectItem value="personal">Personal Care</SelectItem>
+                  <SelectItem value="travel">Travel</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {subCardCategory && (
+                <p className="text-gray-400 text-sm mt-1">
+                  Card ID will be: @{userData?.cardId.split('-')[0]}.{subCardCategory.toLowerCase()}@capi
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="subcard-limit" className="text-white">
+                Spending Limit (₹)
+              </Label>
+              <Input
+                id="subcard-limit"
+                type="number"
+                value={subCardLimit}
+                onChange={(e) => setSubCardLimit(e.target.value)}
+                placeholder="Enter spending limit"
+                className="bg-gray-800 border-gray-600 text-white"
+                min="1"
+                max={userData?.balance}
+                required
+              />
+              <p className="text-gray-400 text-sm mt-1">
+                Available from main balance: ₹{userData?.balance.toLocaleString()}
+              </p>
+            </div>
+
+            {message && message.includes("Sub-card") && (
+              <div className={`p-3 rounded text-center ${
+                message.includes('✅')
+                  ? 'bg-green-900/50 text-green-300 border border-green-700'
+                  : 'bg-red-900/50 text-red-300 border border-red-700'
+              }`}>
+                {message}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleCreateSubCard}
+                disabled={!subCardName.trim() || !subCardCategory || !subCardLimit || loading}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+              >
+                {loading ? 'Creating...' : 'Create Sub-Card'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowSubCardDialog(false)
+                  setSubCardName("")
+                  setSubCardCategory("")
+                  setSubCardLimit("")
+                  setMessage("")
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
