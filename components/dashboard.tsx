@@ -2345,6 +2345,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Attribution */}
+        <div className="text-center mt-6">
+          <p className="text-gray-400 font-medium text-sm tracking-wide">
+            Engineered by Ansh Chauhan
+          </p>
+        </div>
       </div>
 
       {/* Chatbot Button */}
@@ -2711,7 +2718,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
               <div className="bg-gray-800 p-3 rounded-lg mt-4">
                 <p className="text-gray-300 text-sm mb-2">💡 Improve your score:</p>
                 <ul className="text-gray-400 text-xs space-y-1">
-                  <li>��� Make more transactions</li>
+                  <li>• Make more transactions</li>
                   <li>• Increase transaction amounts</li>
                   <li>• Use Pay Later responsibly</li>
                   <li>• Maintain payment consistency</li>
