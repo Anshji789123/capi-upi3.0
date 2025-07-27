@@ -1838,6 +1838,30 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     />
                   </div>
 
+                  {/* Sub-card selection */}
+                  {userData.subCards && userData.subCards.length > 0 && (
+                    <div>
+                      <Label htmlFor="sub-card" className="text-white">
+                        Payment Source (Optional)
+                      </Label>
+                      <Select value={selectedSubCard} onValueChange={setSelectedSubCard}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue placeholder="Select payment source" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600">
+                          <SelectItem value="" className="text-white">
+                            Main Card (₹{userData.balance.toLocaleString()})
+                          </SelectItem>
+                          {userData.subCards.filter(sc => sc.isActive).map((subCard) => (
+                            <SelectItem key={subCard.id} value={subCard.id} className="text-white">
+                              {subCard.name} - ₹{(subCard.limit - subCard.used).toLocaleString()} available
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div>
                     <Label htmlFor="amount" className="text-white">
                       Amount (₹)
