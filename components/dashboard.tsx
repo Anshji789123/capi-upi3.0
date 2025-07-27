@@ -2332,7 +2332,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 <div>
                   <h3 className="text-white font-semibold">Card Security</h3>
                   <p className="text-gray-400 text-sm">Block your card immediately if your details are compromised</p>
-                  <p className="text-gray-500 text-xs mt-1">Engineered by Ansh Chauhan</p>
                 </div>
               </div>
               <Button
@@ -2712,7 +2711,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
               <div className="bg-gray-800 p-3 rounded-lg mt-4">
                 <p className="text-gray-300 text-sm mb-2">💡 Improve your score:</p>
                 <ul className="text-gray-400 text-xs space-y-1">
-                  <li>• Make more transactions</li>
+                  <li>��� Make more transactions</li>
                   <li>• Increase transaction amounts</li>
                   <li>• Use Pay Later responsibly</li>
                   <li>• Maintain payment consistency</li>
