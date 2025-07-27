@@ -747,6 +747,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const executeRegularPayment = async (amount: number, recipientCardId: string) => {
     if (!userData || !auth.currentUser) return
 
+    // If a sub-card is selected, handle sub-card payment
+    if (selectedSubCard) {
+      return handleSubCardPayment(amount, recipientCardId, selectedSubCard)
+    }
+
     setLoading(true)
     setMessage("")
 
@@ -790,6 +795,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       setPaymentAmount("")
       setRecipientCardId("")
+      setSelectedSubCard("")
       setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
 
       // Add notification for sender (debit)
