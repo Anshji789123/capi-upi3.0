@@ -622,6 +622,10 @@ export default function HomePage() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onSuccess={() => setShowAuthModal(false)}
+        onAdminLogin={() => {
+          setShowAuthModal(false)
+          setShowAdminPanel(true)
+        }}
       />
     </div>
   )
