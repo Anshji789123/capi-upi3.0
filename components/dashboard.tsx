@@ -1136,9 +1136,175 @@ export function Dashboard({ onLogout }: DashboardProps) {
     setChatInput("")
   }
 
+  const handleCreateSubCard = async () => {
+    if (!userData || !auth.currentUser) return
+
+    if (!subCardName.trim()) {
+      setMessage("❌ Please enter a sub-card name")
+      return
+    }
+
+    if (!subCardCategory) {
+      setMessage("❌ Please select a category")
+      return
+    }
+
+    const limit = Number.parseFloat(subCardLimit)
+    if (limit <= 0 || limit > userData.balance) {
+      setMessage("❌ Invalid limit amount")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const newSubCard: SubCard = {
+        id: Date.now().toString(),
+        name: subCardName.trim(),
+        cardId: `${userData.cardId.split('-')[0]}.${subCardCategory.toLowerCase()}@capi`,
+        category: subCardCategory,
+        limit,
+        used: 0,
+        createdAt: new Date().toISOString(),
+        isActive: true
+      }
+
+      const currentSubCards = userData.subCards || []
+      const updatedSubCards = [...currentSubCards, newSubCard]
+
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        subCards: updatedSubCards
+      })
+
+      setShowSubCardDialog(false)
+      setSubCardName("")
+      setSubCardCategory("")
+      setSubCardLimit("")
+      setMessage(`✅ Sub-card created: ${newSubCard.cardId}`)
+    } catch (error) {
+      console.error("Sub-card creation error:", error)
+      setMessage("❌ Failed to create sub-card. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubCardPayment = async (amount: number, recipientCardId: string, subCardId: string) => {
+    if (!userData || !auth.currentUser) return
+
+    const subCard = userData.subCards?.find(sc => sc.id === subCardId)
+    if (!subCard) {
+      setMessage("❌ Sub-card not found")
+      return
+    }
+
+    const availableLimit = subCard.limit - subCard.used
+    if (amount > availableLimit) {
+      setMessage(`❌ Amount exceeds sub-card limit of ₹${availableLimit.toLocaleString()}`)
+      return
+    }
+
+    if (amount > userData.balance) {
+      setMessage("❌ Insufficient main card balance")
+      return
+    }
+
+    setLoading(true)
+    setMessage("")
+
+    try {
+      // Find recipient by card ID
+      const usersRef = collection(db, "users")
+      const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        setMessage("❌ Recipient Card ID not found")
+        return
+      }
+
+      const recipientDoc = querySnapshot.docs[0]
+      const recipientData = recipientDoc.data()
+
+      // Update sender balance
+      const newSenderBalance = userData.balance - amount
+
+      // Update sub-card usage
+      const updatedSubCards = userData.subCards!.map(sc =>
+        sc.id === subCardId ? { ...sc, used: sc.used + amount } : sc
+      )
+
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        balance: newSenderBalance,
+        subCards: updatedSubCards
+      })
+
+      // Update recipient balance
+      const newRecipientBalance = recipientData.balance + amount
+      await updateDoc(doc(db, "users", recipientDoc.id), {
+        balance: newRecipientBalance,
+      })
+
+      // Create transaction record with sub-card info
+      await addDoc(collection(db, "transactions"), {
+        senderId: auth.currentUser.uid,
+        senderCardId: userData.cardId,
+        recipientId: recipientDoc.id,
+        recipientCardId: recipientCardId.trim(),
+        amount: amount,
+        timestamp: new Date().toISOString(),
+        status: "completed",
+        type: "sub_card",
+        subCardId: subCard.id,
+        subCardName: subCard.name
+      })
+
+      setPaymentAmount("")
+      setRecipientCardId("")
+      setSelectedSubCard("")
+      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} from ${subCard.name} to @${recipientCardId}`)
+
+      // Add notification for sender (debit)
+      addNotification('debit', amount, recipientCardId.trim())
+
+      // Update credit scores for both users
+      await updateCreditScore(auth.currentUser.uid)
+      await updateCreditScore(recipientDoc.id)
+    } catch (error) {
+      console.error("Sub-card payment error:", error)
+      setMessage("❌ Payment failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleToggleSubCard = async (subCardId: string) => {
+    if (!userData || !auth.currentUser) return
+
+    setLoading(true)
+    try {
+      const updatedSubCards = userData.subCards!.map(sc =>
+        sc.id === subCardId ? { ...sc, isActive: !sc.isActive } : sc
+      )
+
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        subCards: updatedSubCards
+      })
+
+      setMessage(`✅ Sub-card ${updatedSubCards.find(sc => sc.id === subCardId)?.isActive ? 'activated' : 'deactivated'}`)
+    } catch (error) {
+      console.error("Sub-card toggle error:", error)
+      setMessage("❌ Failed to update sub-card status")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getBotResponse = (input: string): string => {
     const lowerInput = input.toLowerCase()
 
+    if (lowerInput.includes("sub card") || lowerInput.includes("subcard")) {
+      return "Sub-cards help you manage spending by category! Create sub-cards for food, shopping, entertainment etc. Each has its own limit and tracks spending separately. Use the '+' button next to your main card to create one."
+    }
     if (lowerInput.includes("balance") || lowerInput.includes("money")) {
       return "Your current balance is displayed on your dashboard. You can check it anytime in the balance card. If you need to add money, you can receive payments from other users."
     }
@@ -1170,8 +1336,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
       return "I can help with: account balance, sending money, Pay Later, credit scores, security features, transaction history, and general CAPI questions. What specific topic do you need help with?"
     }
 
-    return "I'm here to help with CAPI! I can assist with payments, Pay Later, credit scores, security features, and account management. Could you please be more specific about what you need help with?"
+    return "I'm here to help with CAPI! I can assist with payments, Pay Later, credit scores, security features, sub-cards, and account management. Could you please be more specific about what you need help with?"
   }
+
+  // Store original function
+  const executeRegularPaymentOriginal = executeRegularPayment
 
   if (dataLoading) {
     return (
