@@ -34,6 +34,10 @@ export default function HomePage() {
     )
   }
 
+  if (showAdminPanel) {
+    return <AdminPanel />
+  }
+
   if (user) {
     return <Dashboard onLogout={() => setUser(null)} />
   }
