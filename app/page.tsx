@@ -15,6 +15,7 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
