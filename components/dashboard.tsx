@@ -748,7 +748,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     if (!userData || !auth.currentUser) return
 
     // If a sub-card is selected, handle sub-card payment
-    if (selectedSubCard) {
+    if (selectedSubCard && selectedSubCard !== "main") {
       return handleSubCardPayment(amount, recipientCardId, selectedSubCard)
     }
 
