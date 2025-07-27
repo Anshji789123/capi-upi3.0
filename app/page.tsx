@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AuthModal } from "@/components/auth-modal"
 import { Dashboard } from "@/components/dashboard"
+import { AdminPanel } from "@/components/admin-panel"
 import Link from "next/link"
 
 export default function HomePage() {
