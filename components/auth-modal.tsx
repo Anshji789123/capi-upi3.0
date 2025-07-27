@@ -67,8 +67,15 @@ export function AuthModal({ isOpen, onClose, onSuccess, onAdminLogin }: AuthModa
             cardId,
             balance: 10000,
             createdAt: new Date().toISOString(),
+            isFrozen: false,
           })
           console.log("Created user data for existing user")
+        } else {
+          // Check if account is frozen
+          const userData = userDoc.data()
+          if (userData?.isFrozen) {
+            throw new Error("Your account has been frozen. Please contact support.")
+          }
         }
       } else {
         // Create new user
