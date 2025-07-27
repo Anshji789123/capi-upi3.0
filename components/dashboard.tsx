@@ -47,6 +47,17 @@ import {
   Target,
 } from "lucide-react"
 
+interface SubCard {
+  id: string
+  name: string
+  cardId: string
+  category: string
+  limit: number
+  used: number
+  createdAt: string
+  isActive: boolean
+}
+
 interface UserData {
   name: string
   email: string
@@ -63,6 +74,7 @@ interface UserData {
   creditScore?: number
   totalTransactionAmount?: number
   transactionCount?: number
+  subCards?: SubCard[]
 }
 
 interface Transaction {
@@ -75,6 +87,8 @@ interface Transaction {
   timestamp: string
   status: string
   type?: string
+  subCardId?: string
+  subCardName?: string
 }
 
 interface Notification {
@@ -146,6 +160,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [showChatbot, setShowChatbot] = useState(false)
   const [chatMessages, setChatMessages] = useState<Array<{id: string, text: string, isUser: boolean, timestamp: Date}>>([])
   const [chatInput, setChatInput] = useState("")
+
+  // SubCard states
+  const [showSubCardDialog, setShowSubCardDialog] = useState(false)
+  const [subCardName, setSubCardName] = useState("")
+  const [subCardCategory, setSubCardCategory] = useState("")
+  const [subCardLimit, setSubCardLimit] = useState("")
+  const [selectedSubCard, setSelectedSubCard] = useState<string>("") // For payment selection
 
   // Notification dropdown state
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false)
