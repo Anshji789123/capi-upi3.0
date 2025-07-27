@@ -795,7 +795,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       setPaymentAmount("")
       setRecipientCardId("")
-      setSelectedSubCard("")
+      setSelectedSubCard("main")
       setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
 
       // Add notification for sender (debit)
