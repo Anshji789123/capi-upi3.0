@@ -16,6 +16,7 @@ interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  onAdminLogin?: () => void
 }
 
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
