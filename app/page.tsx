@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { onAuthStateChanged, type User } from "firebase/auth"
 import { auth } from "@/lib/firebase"
-import { ArrowRight, CreditCard, Users, Brain, Star, Zap, Shield, Hash, Smartphone, Globe, Link2, Eye, UserCheck, AlertTriangle } from "lucide-react"
+import { ArrowRight, CreditCard, Users, Brain, Star, Zap, Shield, Hash, Smartphone, Globe, Link2, Eye, UserCheck, AlertTriangle, Plus, Utensils, Gamepad2, ShoppingBag, Car, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AuthModal } from "@/components/auth-modal"
@@ -167,6 +167,192 @@ export default function HomePage() {
               onClick={() => setShowAuthModal(true)}
             >
               Get My Card ID
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Subcard Feature Section */}
+      <section className="py-20 bg-gray-900">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Create Subcards for Everything</h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              Set spending limits and organize your finances with purpose-built subcards for different categories
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
+            {/* Food Subcard */}
+            <Card className="border border-gray-700 bg-gray-800 hover:bg-gray-700 transition-all duration-300 group">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                    <Utensils className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Food & Dining</h3>
+                    <p className="text-sm text-gray-400">Set monthly food budget</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-300">Monthly Limit</span>
+                    <span className="text-white font-semibold">₹5,000</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div className="bg-orange-500 h-2 rounded-full w-3/4"></div>
+                  </div>
+                  <p className="text-xs text-gray-400">₹3,750 spent this month</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Entertainment Subcard */}
+            <Card className="border border-gray-700 bg-gray-800 hover:bg-gray-700 transition-all duration-300 group">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                    <Gamepad2 className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Entertainment</h3>
+                    <p className="text-sm text-gray-400">Movies, games, streaming</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-300">Monthly Limit</span>
+                    <span className="text-white font-semibold">₹2,000</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div className="bg-purple-500 h-2 rounded-full w-1/2"></div>
+                  </div>
+                  <p className="text-xs text-gray-400">₹1,000 spent this month</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Shopping Subcard */}
+            <Card className="border border-gray-700 bg-gray-800 hover:bg-gray-700 transition-all duration-300 group">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                    <ShoppingBag className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Shopping</h3>
+                    <p className="text-sm text-gray-400">Clothes, electronics, etc.</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-300">Monthly Limit</span>
+                    <span className="text-white font-semibold">₹10,000</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div className="bg-blue-500 h-2 rounded-full w-2/5"></div>
+                  </div>
+                  <p className="text-xs text-gray-400">₹4,000 spent this month</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Transport Subcard */}
+            <Card className="border border-gray-700 bg-gray-800 hover:bg-gray-700 transition-all duration-300 group">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                    <Car className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Transport</h3>
+                    <p className="text-sm text-gray-400">Uber, fuel, parking</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-300">Monthly Limit</span>
+                    <span className="text-white font-semibold">₹3,000</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div className="bg-green-500 h-2 rounded-full w-1/3"></div>
+                  </div>
+                  <p className="text-xs text-gray-400">₹1,000 spent this month</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Bills Subcard */}
+            <Card className="border border-gray-700 bg-gray-800 hover:bg-gray-700 transition-all duration-300 group">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                    <Home className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Bills & Utilities</h3>
+                    <p className="text-sm text-gray-400">Electricity, internet, rent</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-300">Monthly Limit</span>
+                    <span className="text-white font-semibold">₹8,000</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div className="bg-yellow-500 h-2 rounded-full w-5/6"></div>
+                  </div>
+                  <p className="text-xs text-gray-400">₹6,700 spent this month</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Create New Subcard */}
+            <Card className="border border-dashed border-gray-600 bg-gray-800 hover:bg-gray-700 transition-all duration-300 group cursor-pointer">
+              <CardContent className="p-6 h-full flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center mb-4 group-hover:bg-white group-hover:scale-110 transition-all">
+                  <Plus className="h-6 w-6 text-white group-hover:text-black" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">Create Custom Subcard</h3>
+                <p className="text-sm text-gray-400">Set limits for any category</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Benefits */}
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-6 w-6 text-black" />
+              </div>
+              <h4 className="text-lg font-semibold text-white mb-2">Spending Control</h4>
+              <p className="text-gray-400 text-sm">Set monthly limits to avoid overspending in any category</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                <Brain className="h-6 w-6 text-black" />
+              </div>
+              <h4 className="text-lg font-semibold text-white mb-2">Smart Tracking</h4>
+              <p className="text-gray-400 text-sm">Automatically categorize expenses and track spending patterns</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-black" />
+              </div>
+              <h4 className="text-lg font-semibold text-white mb-2">Family Sharing</h4>
+              <p className="text-gray-400 text-sm">Share subcards with family members with individual limits</p>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <Button
+              size="lg"
+              className="bg-white text-black hover:bg-gray-200 px-8 py-4 text-lg font-semibold group"
+              onClick={() => setShowAuthModal(true)}
+            >
+              Start Creating Subcards
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
