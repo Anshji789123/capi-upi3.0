@@ -602,7 +602,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     const amount = Number.parseFloat(paymentAmount)
 
     if (amount <= 0) {
-      setMessage("�� Please enter a valid amount")
+      setMessage("❌ Please enter a valid amount")
       return
     }
 
@@ -1799,96 +1799,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </CardContent>
           </Card>
 
-          {/* Credit Score Section */}
-          <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
-                <div className="flex items-center">
-                  <Award className="h-5 w-5 mr-2" />
-                  Your Credit Score
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-yellow-400">{userData.creditScore || 300}</span>
-                  <span className="text-gray-400 text-sm">/1000</span>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="w-full bg-gray-700 rounded-full h-3">
-                <div
-                  className={`h-3 rounded-full transition-all duration-500 ${
-                    (userData.creditScore || 300) >= 700
-                      ? 'bg-green-500'
-                      : (userData.creditScore || 300) >= 600
-                      ? 'bg-yellow-500'
-                      : 'bg-red-500'
-                  }`}
-                  style={{ width: `${((userData.creditScore || 300) / 1000) * 100}%` }}
-                ></div>
-              </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Rating</span>
-                  <span className={`font-medium ${
-                    (userData.creditScore || 300) >= 900 ? 'text-green-400' :
-                    (userData.creditScore || 300) >= 800 ? 'text-blue-400' :
-                    (userData.creditScore || 300) >= 700 ? 'text-green-400' :
-                    (userData.creditScore || 300) >= 600 ? 'text-yellow-400' :
-                    (userData.creditScore || 300) >= 500 ? 'text-orange-400' : 'text-red-400'
-                  }`}>
-                    {(userData.creditScore || 300) >= 900 ? 'Excellent' :
-                     (userData.creditScore || 300) >= 800 ? 'Very Good' :
-                     (userData.creditScore || 300) >= 700 ? 'Good' :
-                     (userData.creditScore || 300) >= 600 ? 'Fair' :
-                     (userData.creditScore || 300) >= 500 ? 'Average' : 'Poor'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total Transactions</span>
-                  <span className="text-white">{userData.transactionCount || 0}</span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Transaction Volume</span>
-                  <span className="text-white">₹{(userData.totalTransactionAmount || 0).toLocaleString()}</span>
-                </div>
-
-                <div className="bg-gray-800 p-3 rounded-lg mt-4">
-                  <p className="text-gray-300 text-sm mb-2">💡 Improve your score:</p>
-                  <ul className="text-gray-400 text-xs space-y-1">
-                    <li>• Make more transactions</li>
-                    <li>• Increase transaction amounts</li>
-                    <li>• Use Pay Later responsibly</li>
-                    <li>• Maintain payment consistency</li>
-                  </ul>
-                  <div className="flex space-x-2 mt-3">
-                    <Button
-                      size="sm"
-                      className="text-xs bg-black text-white hover:bg-gray-800 border border-white"
-                      onClick={() => {
-                        setActiveTab("send")
-                        document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
-                      }}
-                    >
-                      Send Money
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="text-xs bg-white text-black hover:bg-gray-200 border border-black"
-                      onClick={() => {
-                        setActiveTab("request")
-                        document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
-                      }}
-                    >
-                      Request Money
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Payment Section */}
           <Card className="border border-gray-700 bg-gray-900 lg:col-span-1" id="payment-section">
