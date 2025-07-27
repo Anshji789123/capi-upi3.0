@@ -1974,7 +1974,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                           <SelectValue placeholder="Select payment source" />
                         </SelectTrigger>
                         <SelectContent className="bg-gray-800 border-gray-600">
-                          <SelectItem value="" className="text-white">
+                          <SelectItem value="main" className="text-white">
                             Main Card (₹{userData.balance.toLocaleString()})
                           </SelectItem>
                           {userData.subCards.filter(sc => sc.isActive).map((subCard) => (
