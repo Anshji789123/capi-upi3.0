@@ -153,6 +153,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
   // Settings states
   const [showSettings, setShowSettings] = useState(false)
+  const [showCreditScore, setShowCreditScore] = useState(false)
   const [newEmail, setNewEmail] = useState("")
   const [settingsMessage, setSettingsMessage] = useState("")
 
@@ -900,7 +901,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
-        setMessage("�� Recipient not found")
+        setMessage("���� Recipient not found")
         return
       }
 
@@ -1387,6 +1388,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
             <span className="text-xl font-bold text-white">CAPI Dashboard</span>
           </div>
           <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white"
+              onClick={() => setShowCreditScore(true)}
+            >
+              <Award className="h-4 w-4" />
+            </Button>
             <div className="relative notification-dropdown">
               <Button
                 variant="ghost"
@@ -1790,96 +1799,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </CardContent>
           </Card>
 
-          {/* Credit Score Section */}
-          <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
-                <div className="flex items-center">
-                  <Award className="h-5 w-5 mr-2" />
-                  Your Credit Score
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-yellow-400">{userData.creditScore || 300}</span>
-                  <span className="text-gray-400 text-sm">/1000</span>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="w-full bg-gray-700 rounded-full h-3">
-                <div
-                  className={`h-3 rounded-full transition-all duration-500 ${
-                    (userData.creditScore || 300) >= 700
-                      ? 'bg-green-500'
-                      : (userData.creditScore || 300) >= 600
-                      ? 'bg-yellow-500'
-                      : 'bg-red-500'
-                  }`}
-                  style={{ width: `${((userData.creditScore || 300) / 1000) * 100}%` }}
-                ></div>
-              </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Rating</span>
-                  <span className={`font-medium ${
-                    (userData.creditScore || 300) >= 900 ? 'text-green-400' :
-                    (userData.creditScore || 300) >= 800 ? 'text-blue-400' :
-                    (userData.creditScore || 300) >= 700 ? 'text-green-400' :
-                    (userData.creditScore || 300) >= 600 ? 'text-yellow-400' :
-                    (userData.creditScore || 300) >= 500 ? 'text-orange-400' : 'text-red-400'
-                  }`}>
-                    {(userData.creditScore || 300) >= 900 ? 'Excellent' :
-                     (userData.creditScore || 300) >= 800 ? 'Very Good' :
-                     (userData.creditScore || 300) >= 700 ? 'Good' :
-                     (userData.creditScore || 300) >= 600 ? 'Fair' :
-                     (userData.creditScore || 300) >= 500 ? 'Average' : 'Poor'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total Transactions</span>
-                  <span className="text-white">{userData.transactionCount || 0}</span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Transaction Volume</span>
-                  <span className="text-white">₹{(userData.totalTransactionAmount || 0).toLocaleString()}</span>
-                </div>
-
-                <div className="bg-gray-800 p-3 rounded-lg mt-4">
-                  <p className="text-gray-300 text-sm mb-2">💡 Improve your score:</p>
-                  <ul className="text-gray-400 text-xs space-y-1">
-                    <li>• Make more transactions</li>
-                    <li>• Increase transaction amounts</li>
-                    <li>• Use Pay Later responsibly</li>
-                    <li>• Maintain payment consistency</li>
-                  </ul>
-                  <div className="flex space-x-2 mt-3">
-                    <Button
-                      size="sm"
-                      className="text-xs bg-black text-white hover:bg-gray-800 border border-white"
-                      onClick={() => {
-                        setActiveTab("send")
-                        document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
-                      }}
-                    >
-                      Send Money
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="text-xs bg-white text-black hover:bg-gray-200 border border-black"
-                      onClick={() => {
-                        setActiveTab("request")
-                        document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
-                      }}
-                    >
-                      Request Money
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Payment Section */}
           <Card className="border border-gray-700 bg-gray-900 lg:col-span-1" id="payment-section">
@@ -1900,14 +1820,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 >
                   <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Pay Later
-                </Button>
-                <Button
-                  variant={activeTab === "request" ? "default" : "ghost"}
-                  onClick={() => setActiveTab("request")}
-                  className={`flex-1 text-xs sm:text-sm ${activeTab === "request" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
-                >
-                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  Request
                 </Button>
               </div>
             </CardHeader>
@@ -2005,7 +1917,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                         userData.balance}
                       required
                     />
-                    <p className="text-gray-400 text-sm mt-1">Available: ₹{selectedSubCard ? ((userData.subCards?.find(sc => sc.id === selectedSubCard)?.limit || 0) - (userData.subCards?.find(sc => sc.id === selectedSubCard)?.used || 0)).toLocaleString() : userData.balance.toLocaleString()}{selectedSubCard && (<span className="text-blue-400 ml-2">({userData.subCards?.find(sc => sc.id === selectedSubCard)?.name})</span>)}</p>
+                    <p className="text-gray-400 text-sm mt-1">Available: ₹{selectedSubCard && selectedSubCard !== "main" ? ((userData.subCards?.find(sc => sc.id === selectedSubCard)?.limit || 0) - (userData.subCards?.find(sc => sc.id === selectedSubCard)?.used || 0)).toLocaleString() : userData.balance.toLocaleString()}{selectedSubCard && selectedSubCard !== "main" && (<span className="text-blue-400 ml-2">({userData.subCards?.find(sc => sc.id === selectedSubCard)?.name})</span>)}</p>
                   </div>
 
                   <Button type="submit" disabled={loading} className="w-full bg-white text-black hover:bg-gray-200">
@@ -2207,83 +2119,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     </form>
                   )}
                 </div>
-              )}
-
-              {activeTab === "request" && (
-                <form onSubmit={handlePaymentRequest} className="space-y-4">
-                  <div className="bg-gradient-to-r from-orange-900/20 to-yellow-900/20 p-4 rounded-lg mb-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-white font-semibold mb-2">💸 Request Money</h3>
-                        <p className="text-gray-400 text-sm">Ask other users to send you money</p>
-                      </div>
-                      <DollarSign className="h-8 w-8 text-orange-400" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="request-recipient" className="text-white">
-                      Request From
-                    </Label>
-                    <Select value={requestRecipientCardId} onValueChange={setRequestRecipientCardId} required>
-                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                        <SelectValue placeholder="Select user or use credit score" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600 max-h-60 overflow-y-auto">
-                        {availableUsers.map((user) => (
-                          <SelectItem key={user.cardId} value={user.cardId} className="text-white hover:bg-gray-700">
-                            {user.name} (@{user.cardId})
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="credit_score" className="text-green-400 hover:bg-gray-700">
-                          Credit Score (₹{userData.creditScore || 300} available)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="request-amount" className="text-white">
-                      Amount (₹)
-                    </Label>
-                    <Input
-                      id="request-amount"
-                      type="number"
-                      value={requestAmount}
-                      onChange={(e) => setRequestAmount(e.target.value)}
-                      placeholder="Enter amount to request"
-                      className="bg-gray-800 border-gray-600 text-white"
-                      min="1"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="request-message" className="text-white">
-                      Message (Optional)
-                    </Label>
-                    <Input
-                      id="request-message"
-                      type="text"
-                      value={requestMessage}
-                      onChange={(e) => setRequestMessage(e.target.value)}
-                      placeholder="Add a note for your request"
-                      className="bg-gray-800 border-gray-600 text-white"
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={loading || availableUsers.length === 0}
-                    className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 text-white hover:from-orange-700 hover:to-yellow-700"
-                  >
-                    {loading ? "Sending Request..." : "Send Request"}
-                  </Button>
-
-                  {availableUsers.length === 0 && (
-                    <p className="text-gray-400 text-sm text-center">No users available to request money from</p>
-                  )}
-                </form>
               )}
 
               {message && (
@@ -2497,7 +2332,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 <div>
                   <h3 className="text-white font-semibold">Card Security</h3>
                   <p className="text-gray-400 text-sm">Block your card immediately if your details are compromised</p>
-                  <p className="text-gray-500 text-xs mt-1">Engineered by Ansh Chauhan</p>
                 </div>
               </div>
               <Button
@@ -2511,6 +2345,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Attribution */}
+        <div className="text-center mt-6">
+          <p className="text-gray-400 font-medium text-sm tracking-wide">
+            Engineered by Ansh Chauhan
+          </p>
+        </div>
       </div>
 
       {/* Chatbot Button */}
@@ -2808,6 +2649,114 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 className="text-gray-400 hover:text-white"
               >
                 Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credit Score Dialog */}
+      <Dialog open={showCreditScore} onOpenChange={setShowCreditScore}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Award className="h-5 w-5 mr-2" />
+                Your Credit Score
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-yellow-400">{userData.creditScore || 300}</span>
+                <span className="text-gray-400 text-sm">/1000</span>
+              </div>
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Track your credit score and improve it with more transactions
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="w-full bg-gray-700 rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all duration-500 ${
+                  (userData.creditScore || 300) >= 700
+                    ? 'bg-green-500'
+                    : (userData.creditScore || 300) >= 600
+                    ? 'bg-yellow-500'
+                    : 'bg-red-500'
+                }`}
+                style={{ width: `${((userData.creditScore || 300) / 1000) * 100}%` }}
+              ></div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Rating</span>
+                <span className={`font-medium ${
+                  (userData.creditScore || 300) >= 900 ? 'text-green-400' :
+                  (userData.creditScore || 300) >= 800 ? 'text-blue-400' :
+                  (userData.creditScore || 300) >= 700 ? 'text-green-400' :
+                  (userData.creditScore || 300) >= 600 ? 'text-yellow-400' :
+                  (userData.creditScore || 300) >= 500 ? 'text-orange-400' : 'text-red-400'
+                }`}>
+                  {(userData.creditScore || 300) >= 900 ? 'Excellent' :
+                   (userData.creditScore || 300) >= 800 ? 'Very Good' :
+                   (userData.creditScore || 300) >= 700 ? 'Good' :
+                   (userData.creditScore || 300) >= 600 ? 'Fair' :
+                   (userData.creditScore || 300) >= 500 ? 'Average' : 'Poor'}
+                </span>
+              </div>
+
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Total Transactions</span>
+                <span className="text-white">{userData.transactionCount || 0}</span>
+              </div>
+
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Transaction Volume</span>
+                <span className="text-white">₹{(userData.totalTransactionAmount || 0).toLocaleString()}</span>
+              </div>
+
+              <div className="bg-gray-800 p-3 rounded-lg mt-4">
+                <p className="text-gray-300 text-sm mb-2">💡 Improve your score:</p>
+                <ul className="text-gray-400 text-xs space-y-1">
+                  <li>• Make more transactions</li>
+                  <li>• Increase transaction amounts</li>
+                  <li>• Use Pay Later responsibly</li>
+                  <li>• Maintain payment consistency</li>
+                </ul>
+                <div className="flex space-x-2 mt-3">
+                  <Button
+                    size="sm"
+                    className="text-xs bg-black text-white hover:bg-gray-800 border border-white"
+                    onClick={() => {
+                      setShowCreditScore(false)
+                      setActiveTab("send")
+                      document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+                    }}
+                  >
+                    Send Money
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="text-xs bg-white text-black hover:bg-gray-200 border border-black"
+                    onClick={() => {
+                      setShowCreditScore(false)
+                      setActiveTab("payLater")
+                      document.getElementById("payment-section")?.scrollIntoView({ behavior: "smooth" })
+                    }}
+                  >
+                    Use Pay Later
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                onClick={() => setShowCreditScore(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                Close
               </Button>
             </div>
           </div>
