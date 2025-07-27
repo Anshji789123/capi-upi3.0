@@ -153,6 +153,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
   // Settings states
   const [showSettings, setShowSettings] = useState(false)
+  const [showCreditScore, setShowCreditScore] = useState(false)
   const [newEmail, setNewEmail] = useState("")
   const [settingsMessage, setSettingsMessage] = useState("")
 
