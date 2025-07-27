@@ -47,6 +47,17 @@ import {
   Target,
 } from "lucide-react"
 
+interface SubCard {
+  id: string
+  name: string
+  cardId: string
+  category: string
+  limit: number
+  used: number
+  createdAt: string
+  isActive: boolean
+}
+
 interface UserData {
   name: string
   email: string
@@ -63,6 +74,7 @@ interface UserData {
   creditScore?: number
   totalTransactionAmount?: number
   transactionCount?: number
+  subCards?: SubCard[]
 }
 
 interface Transaction {
@@ -75,6 +87,8 @@ interface Transaction {
   timestamp: string
   status: string
   type?: string
+  subCardId?: string
+  subCardName?: string
 }
 
 interface Notification {
@@ -146,6 +160,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [showChatbot, setShowChatbot] = useState(false)
   const [chatMessages, setChatMessages] = useState<Array<{id: string, text: string, isUser: boolean, timestamp: Date}>>([])
   const [chatInput, setChatInput] = useState("")
+
+  // SubCard states
+  const [showSubCardDialog, setShowSubCardDialog] = useState(false)
+  const [subCardName, setSubCardName] = useState("")
+  const [subCardCategory, setSubCardCategory] = useState("")
+  const [subCardLimit, setSubCardLimit] = useState("")
+  const [selectedSubCard, setSelectedSubCard] = useState<string>("main") // For payment selection
 
   // Notification dropdown state
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false)
@@ -726,6 +747,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const executeRegularPayment = async (amount: number, recipientCardId: string) => {
     if (!userData || !auth.currentUser) return
 
+    // If a sub-card is selected, handle sub-card payment
+    if (selectedSubCard && selectedSubCard !== "main") {
+      return handleSubCardPayment(amount, recipientCardId, selectedSubCard)
+    }
+
     setLoading(true)
     setMessage("")
 
@@ -769,6 +795,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       setPaymentAmount("")
       setRecipientCardId("")
+      setSelectedSubCard("main")
       setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} to @${recipientCardId}`)
 
       // Add notification for sender (debit)
@@ -1115,9 +1142,175 @@ export function Dashboard({ onLogout }: DashboardProps) {
     setChatInput("")
   }
 
+  const handleCreateSubCard = async () => {
+    if (!userData || !auth.currentUser) return
+
+    if (!subCardName.trim()) {
+      setMessage("❌ Please enter a sub-card name")
+      return
+    }
+
+    if (!subCardCategory) {
+      setMessage("❌ Please select a category")
+      return
+    }
+
+    const limit = Number.parseFloat(subCardLimit)
+    if (limit <= 0 || limit > userData.balance) {
+      setMessage("❌ Invalid limit amount")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const newSubCard: SubCard = {
+        id: Date.now().toString(),
+        name: subCardName.trim(),
+        cardId: `${userData.cardId.split('-')[0]}.${subCardCategory.toLowerCase()}@capi`,
+        category: subCardCategory,
+        limit,
+        used: 0,
+        createdAt: new Date().toISOString(),
+        isActive: true
+      }
+
+      const currentSubCards = userData.subCards || []
+      const updatedSubCards = [...currentSubCards, newSubCard]
+
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        subCards: updatedSubCards
+      })
+
+      setShowSubCardDialog(false)
+      setSubCardName("")
+      setSubCardCategory("")
+      setSubCardLimit("")
+      setMessage(`✅ Sub-card created: ${newSubCard.cardId}`)
+    } catch (error) {
+      console.error("Sub-card creation error:", error)
+      setMessage("❌ Failed to create sub-card. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubCardPayment = async (amount: number, recipientCardId: string, subCardId: string) => {
+    if (!userData || !auth.currentUser) return
+
+    const subCard = userData.subCards?.find(sc => sc.id === subCardId)
+    if (!subCard) {
+      setMessage("❌ Sub-card not found")
+      return
+    }
+
+    const availableLimit = subCard.limit - subCard.used
+    if (amount > availableLimit) {
+      setMessage(`❌ Amount exceeds sub-card limit of ₹${availableLimit.toLocaleString()}`)
+      return
+    }
+
+    if (amount > userData.balance) {
+      setMessage("❌ Insufficient main card balance")
+      return
+    }
+
+    setLoading(true)
+    setMessage("")
+
+    try {
+      // Find recipient by card ID
+      const usersRef = collection(db, "users")
+      const q = query(usersRef, where("cardId", "==", recipientCardId.trim()))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        setMessage("❌ Recipient Card ID not found")
+        return
+      }
+
+      const recipientDoc = querySnapshot.docs[0]
+      const recipientData = recipientDoc.data()
+
+      // Update sender balance
+      const newSenderBalance = userData.balance - amount
+
+      // Update sub-card usage
+      const updatedSubCards = userData.subCards!.map(sc =>
+        sc.id === subCardId ? { ...sc, used: sc.used + amount } : sc
+      )
+
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        balance: newSenderBalance,
+        subCards: updatedSubCards
+      })
+
+      // Update recipient balance
+      const newRecipientBalance = recipientData.balance + amount
+      await updateDoc(doc(db, "users", recipientDoc.id), {
+        balance: newRecipientBalance,
+      })
+
+      // Create transaction record with sub-card info
+      await addDoc(collection(db, "transactions"), {
+        senderId: auth.currentUser.uid,
+        senderCardId: userData.cardId,
+        recipientId: recipientDoc.id,
+        recipientCardId: recipientCardId.trim(),
+        amount: amount,
+        timestamp: new Date().toISOString(),
+        status: "completed",
+        type: "sub_card",
+        subCardId: subCard.id,
+        subCardName: subCard.name
+      })
+
+      setPaymentAmount("")
+      setRecipientCardId("")
+      setSelectedSubCard("main")
+      setMessage(`✅ Successfully sent ₹${amount.toLocaleString()} from ${subCard.name} to @${recipientCardId}`)
+
+      // Add notification for sender (debit)
+      addNotification('debit', amount, recipientCardId.trim())
+
+      // Update credit scores for both users
+      await updateCreditScore(auth.currentUser.uid)
+      await updateCreditScore(recipientDoc.id)
+    } catch (error) {
+      console.error("Sub-card payment error:", error)
+      setMessage("❌ Payment failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleToggleSubCard = async (subCardId: string) => {
+    if (!userData || !auth.currentUser) return
+
+    setLoading(true)
+    try {
+      const updatedSubCards = userData.subCards!.map(sc =>
+        sc.id === subCardId ? { ...sc, isActive: !sc.isActive } : sc
+      )
+
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        subCards: updatedSubCards
+      })
+
+      setMessage(`✅ Sub-card ${updatedSubCards.find(sc => sc.id === subCardId)?.isActive ? 'activated' : 'deactivated'}`)
+    } catch (error) {
+      console.error("Sub-card toggle error:", error)
+      setMessage("❌ Failed to update sub-card status")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getBotResponse = (input: string): string => {
     const lowerInput = input.toLowerCase()
 
+    if (lowerInput.includes("sub card") || lowerInput.includes("subcard")) {
+      return "Sub-cards help you manage spending by category! Create sub-cards for food, shopping, entertainment etc. Each has its own limit and tracks spending separately. Use the '+' button next to your main card to create one."
+    }
     if (lowerInput.includes("balance") || lowerInput.includes("money")) {
       return "Your current balance is displayed on your dashboard. You can check it anytime in the balance card. If you need to add money, you can receive payments from other users."
     }
@@ -1149,8 +1342,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
       return "I can help with: account balance, sending money, Pay Later, credit scores, security features, transaction history, and general CAPI questions. What specific topic do you need help with?"
     }
 
-    return "I'm here to help with CAPI! I can assist with payments, Pay Later, credit scores, security features, and account management. Could you please be more specific about what you need help with?"
+    return "I'm here to help with CAPI! I can assist with payments, Pay Later, credit scores, security features, sub-cards, and account management. Could you please be more specific about what you need help with?"
   }
+
+  // Store original function
+  const executeRegularPaymentOriginal = executeRegularPayment
 
   if (dataLoading) {
     return (
@@ -1393,7 +1589,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-4 gap-6">
+        <div className="grid lg:grid-cols-3 gap-6">
           {/* Virtual Card */}
           <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
             <CardHeader>
@@ -1454,7 +1650,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     <div>
                       <p className="text-gray-400 text-sm">Available Balance</p>
                       <p className="text-white font-bold text-xl">
-                        {balanceVisible ? `₹${userData.balance.toLocaleString()}` : "••••••"}
+                        {balanceVisible ? `₹${userData.balance.toLocaleString()}` : "•��••••"}
                       </p>
                     </div>
 
@@ -1500,6 +1696,97 @@ export function Dashboard({ onLogout }: DashboardProps) {
                   Biometric
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Sub-Cards Section */}
+          <Card className="border border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center justify-between">
+                <div className="flex items-center">
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Sub-Cards
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSubCardDialog(true)}
+                  className="text-blue-400 hover:text-blue-300"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {userData.subCards && userData.subCards.length > 0 ? (
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {userData.subCards.map((subCard) => (
+                    <div
+                      key={subCard.id}
+                      className={`bg-gray-800 p-4 rounded-lg border ${subCard.isActive ? 'border-green-600/30' : 'border-red-600/30'}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="text-white font-semibold text-sm">{subCard.name}</h4>
+                          <p className="text-gray-400 text-xs font-mono">@{subCard.cardId}</p>
+                          <p className="text-gray-500 text-xs capitalize">{subCard.category}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleToggleSubCard(subCard.id)}
+                          className={`text-xs ${subCard.isActive ? 'text-green-400 hover:text-green-300' : 'text-red-400 hover:text-red-300'}`}
+                        >
+                          {subCard.isActive ? <Unlock className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Used</span>
+                          <span className="text-red-400">₹{subCard.used.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Available</span>
+                          <span className="text-green-400">₹{(subCard.limit - subCard.used).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Limit</span>
+                          <span className="text-white">₹{subCard.limit.toLocaleString()}</span>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              (subCard.used / subCard.limit) > 0.8 ? 'bg-red-500' :
+                              (subCard.used / subCard.limit) > 0.6 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min((subCard.used / subCard.limit) * 100, 100)}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-gray-500 text-center">
+                          {((subCard.used / subCard.limit) * 100).toFixed(1)}% used
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <CreditCard className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-2">No sub-cards created</p>
+                  <p className="text-gray-500 text-sm mb-4">Create sub-cards to manage spending by category</p>
+                  <Button
+                    onClick={() => setShowSubCardDialog(true)}
+                    className="bg-blue-600 text-white hover:bg-blue-700"
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Sub-Card
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1631,16 +1918,74 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     <Label htmlFor="recipient" className="text-white">
                       Recipient Card ID
                     </Label>
-                    <Input
-                      id="recipient"
-                      type="text"
-                      value={recipientCardId}
-                      onChange={(e) => setRecipientCardId(e.target.value)}
-                      placeholder="Enter recipient's Card ID (e.g., john123-capi)"
-                      className="bg-gray-800 border-gray-600 text-white"
-                      required
-                    />
+                    <Select value={recipientCardId} onValueChange={setRecipientCardId} required>
+                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                        <SelectValue placeholder="Select recipient or enter Card ID" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600 max-h-60 overflow-y-auto">
+                        {availableUsers.length > 0 && (
+                          <>
+                            <div className="px-2 py-1 text-xs text-gray-400 font-medium border-b border-gray-600">
+                              Live Users ({availableUsers.length} online)
+                            </div>
+                            {availableUsers.map((user) => (
+                              <SelectItem key={user.cardId} value={user.cardId} className="text-white hover:bg-gray-700">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                    {user.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">{user.name}</span>
+                                    <span className="text-gray-400 text-sm ml-2">@{user.cardId}</span>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                            <div className="px-2 py-1 text-xs text-gray-400 font-medium border-t border-gray-600 mt-1">
+                              Or enter Card ID manually
+                            </div>
+                          </>
+                        )}
+                        <SelectItem value="manual" className="text-blue-400 hover:bg-gray-700">
+                          ✏️ Enter Card ID manually
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {recipientCardId === "manual" && (
+                      <Input
+                        type="text"
+                        value=""
+                        onChange={(e) => setRecipientCardId(e.target.value)}
+                        placeholder="Enter recipient's Card ID (e.g., john123-capi)"
+                        className="bg-gray-800 border-gray-600 text-white mt-2"
+                        autoFocus
+                      />
+                    )}
                   </div>
+
+                  {/* Sub-card selection */}
+                  {userData.subCards && userData.subCards.length > 0 && (
+                    <div>
+                      <Label htmlFor="sub-card" className="text-white">
+                        Payment Source (Optional)
+                      </Label>
+                      <Select value={selectedSubCard} onValueChange={setSelectedSubCard}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue placeholder="Select payment source" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600">
+                          <SelectItem value="main" className="text-white">
+                            Main Card (₹{userData.balance.toLocaleString()})
+                          </SelectItem>
+                          {userData.subCards.filter(sc => sc.isActive).map((subCard) => (
+                            <SelectItem key={subCard.id} value={subCard.id} className="text-white">
+                              {subCard.name} - ₹{(subCard.limit - subCard.used).toLocaleString()} available
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div>
                     <Label htmlFor="amount" className="text-white">
@@ -1654,10 +1999,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
                       placeholder="Enter amount"
                       className="bg-gray-800 border-gray-600 text-white"
                       min="1"
-                      max={userData.balance}
+                      max={selectedSubCard && selectedSubCard !== "main" ?
+                        (userData.subCards?.find(sc => sc.id === selectedSubCard)?.limit || 0) -
+                        (userData.subCards?.find(sc => sc.id === selectedSubCard)?.used || 0) :
+                        userData.balance}
                       required
                     />
-                    <p className="text-gray-400 text-sm mt-1">Available: ��{userData.balance.toLocaleString()}</p>
+                    <p className="text-gray-400 text-sm mt-1">Available: ₹{selectedSubCard ? ((userData.subCards?.find(sc => sc.id === selectedSubCard)?.limit || 0) - (userData.subCards?.find(sc => sc.id === selectedSubCard)?.used || 0)).toLocaleString() : userData.balance.toLocaleString()}{selectedSubCard && (<span className="text-blue-400 ml-2">({userData.subCards?.find(sc => sc.id === selectedSubCard)?.name})</span>)}</p>
                   </div>
 
                   <Button type="submit" disabled={loading} className="w-full bg-white text-black hover:bg-gray-200">
@@ -1784,15 +2132,49 @@ export function Dashboard({ onLogout }: DashboardProps) {
                         <Label htmlFor="recipient-paylater" className="text-white">
                           Recipient Card ID
                         </Label>
-                        <Input
-                          id="recipient-paylater"
-                          type="text"
-                          value={recipientCardId}
-                          onChange={(e) => setRecipientCardId(e.target.value)}
-                          placeholder="Enter recipient's Card ID"
-                          className="bg-gray-800 border-gray-600 text-white"
-                          required
-                        />
+                        <Select value={recipientCardId} onValueChange={setRecipientCardId} required>
+                          <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                            <SelectValue placeholder="Select recipient or enter Card ID" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-800 border-gray-600 max-h-60 overflow-y-auto">
+                            {availableUsers.length > 0 && (
+                              <>
+                                <div className="px-2 py-1 text-xs text-gray-400 font-medium border-b border-gray-600">
+                                  Live Users ({availableUsers.length} online)
+                                </div>
+                                {availableUsers.map((user) => (
+                                  <SelectItem key={user.cardId} value={user.cardId} className="text-white hover:bg-gray-700">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                        {user.name.charAt(0).toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <span className="font-medium">{user.name}</span>
+                                        <span className="text-gray-400 text-sm ml-2">@{user.cardId}</span>
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                                <div className="px-2 py-1 text-xs text-gray-400 font-medium border-t border-gray-600 mt-1">
+                                  Or enter Card ID manually
+                                </div>
+                              </>
+                            )}
+                            <SelectItem value="manual" className="text-blue-400 hover:bg-gray-700">
+                              ✏️ Enter Card ID manually
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {recipientCardId === "manual" && (
+                          <Input
+                            type="text"
+                            value=""
+                            onChange={(e) => setRecipientCardId(e.target.value)}
+                            placeholder="Enter recipient's Card ID"
+                            className="bg-gray-800 border-gray-600 text-white mt-2"
+                            autoFocus
+                          />
+                        )}
                       </div>
 
                       <div>
@@ -1918,76 +2300,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </CardContent>
           </Card>
 
-          {/* Available Users */}
-          <Card className="border border-gray-700 bg-gray-900 lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 mr-2" />
-                  Live Users
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-green-400 text-sm font-medium">{availableUsers.length} online</span>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {availableUsers.length > 0 ? (
-                  availableUsers.map((user, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-200 cursor-pointer group"
-                      onClick={() => quickPayUser(user.cardId)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="relative">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-800"></div>
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold">{user.name}</p>
-                          <p className="text-gray-400 text-sm font-mono">@{user.cardId}</p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="sm"
-                          className="bg-white text-black hover:bg-gray-200"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            quickPayUser(user.cardId)
-                          }}
-                        >
-                          Pay
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            quickRequestUser(user.cardId)
-                          }}
-                        >
-                          Request
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-400">No other users online</p>
-                    <p className="text-gray-500 text-sm">Invite friends to join CAPI!</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Pending Payment Requests */}
@@ -2134,6 +2447,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
                             {transaction.type === "pay_later" && (
                               <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
                                 Pay Later
+                              </span>
+                            )}
+                            {transaction.type === "sub_card" && transaction.subCardName && (
+                              <span className="bg-purple-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                {transaction.subCardName}
                               </span>
                             )}
                           </div>
@@ -2686,6 +3004,128 @@ export function Dashboard({ onLogout }: DashboardProps) {
                 </svg>
               </Button>
             </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sub-Card Creation Dialog */}
+      <Dialog open={showSubCardDialog} onOpenChange={setShowSubCardDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <CreditCard className="h-5 w-5 mr-2" />
+              Create Sub-Card
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Create a sub-card to manage spending in specific categories with set limits
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 p-4 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <Target className="h-8 w-8 text-blue-400" />
+                <div>
+                  <h3 className="text-white font-semibold">Budget Control</h3>
+                  <p className="text-gray-300 text-sm">Set spending limits for different categories like food, shopping, entertainment</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="subcard-name" className="text-white">
+                Sub-Card Name
+              </Label>
+              <Input
+                id="subcard-name"
+                type="text"
+                value={subCardName}
+                onChange={(e) => setSubCardName(e.target.value)}
+                placeholder="e.g., Food Budget, Shopping"
+                className="bg-gray-800 border-gray-600 text-white"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="subcard-category" className="text-white">
+                Category
+              </Label>
+              <Select value={subCardCategory} onValueChange={setSubCardCategory} required>
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue placeholder="Select spending category" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="food">Food & Dining</SelectItem>
+                  <SelectItem value="shopping">Shopping</SelectItem>
+                  <SelectItem value="entertainment">Entertainment</SelectItem>
+                  <SelectItem value="transport">Transport</SelectItem>
+                  <SelectItem value="health">Healthcare</SelectItem>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="bills">Bills & Utilities</SelectItem>
+                  <SelectItem value="personal">Personal Care</SelectItem>
+                  <SelectItem value="travel">Travel</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {subCardCategory && (
+                <p className="text-gray-400 text-sm mt-1">
+                  Card ID will be: @{userData?.cardId.split('-')[0]}.{subCardCategory.toLowerCase()}@capi
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="subcard-limit" className="text-white">
+                Spending Limit (₹)
+              </Label>
+              <Input
+                id="subcard-limit"
+                type="number"
+                value={subCardLimit}
+                onChange={(e) => setSubCardLimit(e.target.value)}
+                placeholder="Enter spending limit"
+                className="bg-gray-800 border-gray-600 text-white"
+                min="1"
+                max={userData?.balance}
+                required
+              />
+              <p className="text-gray-400 text-sm mt-1">
+                Available from main balance: ₹{userData?.balance.toLocaleString()}
+              </p>
+            </div>
+
+            {message && message.includes("Sub-card") && (
+              <div className={`p-3 rounded text-center ${
+                message.includes('✅')
+                  ? 'bg-green-900/50 text-green-300 border border-green-700'
+                  : 'bg-red-900/50 text-red-300 border border-red-700'
+              }`}>
+                {message}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleCreateSubCard}
+                disabled={!subCardName.trim() || !subCardCategory || !subCardLimit || loading}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+              >
+                {loading ? 'Creating...' : 'Create Sub-Card'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowSubCardDialog(false)
+                  setSubCardName("")
+                  setSubCardCategory("")
+                  setSubCardLimit("")
+                  setMessage("")
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
