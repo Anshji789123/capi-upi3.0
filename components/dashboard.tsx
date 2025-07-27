@@ -1821,14 +1821,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
                   <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Pay Later
                 </Button>
-                <Button
-                  variant={activeTab === "request" ? "default" : "ghost"}
-                  onClick={() => setActiveTab("request")}
-                  className={`flex-1 text-xs sm:text-sm ${activeTab === "request" ? "bg-white text-black" : "text-gray-400 hover:text-white"}`}
-                >
-                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  Request
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
