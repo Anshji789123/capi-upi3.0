@@ -2232,76 +2232,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </CardContent>
           </Card>
 
-          {/* Available Users */}
-          <Card className="border border-gray-700 bg-gray-900 lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 mr-2" />
-                  Live Users
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-green-400 text-sm font-medium">{availableUsers.length} online</span>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {availableUsers.length > 0 ? (
-                  availableUsers.map((user, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-200 cursor-pointer group"
-                      onClick={() => quickPayUser(user.cardId)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="relative">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-800"></div>
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold">{user.name}</p>
-                          <p className="text-gray-400 text-sm font-mono">@{user.cardId}</p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="sm"
-                          className="bg-white text-black hover:bg-gray-200"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            quickPayUser(user.cardId)
-                          }}
-                        >
-                          Pay
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            quickRequestUser(user.cardId)
-                          }}
-                        >
-                          Request
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-400">No other users online</p>
-                    <p className="text-gray-500 text-sm">Invite friends to join CAPI!</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Pending Payment Requests */}
