@@ -2447,6 +2447,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
                                 Pay Later
                               </span>
                             )}
+                            {transaction.type === "sub_card" && transaction.subCardName && (
+                              <span className="bg-purple-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                {transaction.subCardName}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
