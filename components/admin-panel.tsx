@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { collection, onSnapshot, doc, updateDoc, query, orderBy, limit } from "firebase/firestore"
+import { collection, onSnapshot, doc, updateDoc, query, orderBy, limit, getDoc } from "firebase/firestore"
 import { db, auth } from "@/lib/firebase"
 import { signOut } from "firebase/auth"
 import { Button } from "@/components/ui/button"
@@ -29,7 +29,12 @@ interface Transaction {
   description: string
   timestamp: string
   userId: string
-  userName?: string
+  fromUserId?: string
+  toUserId?: string
+  fromUserName?: string
+  toUserName?: string
+  senderName?: string
+  recipientName?: string
 }
 
 export function AdminPanel() {
@@ -55,11 +60,45 @@ export function AdminPanel() {
       orderBy("timestamp", "desc"), 
       limit(100)
     )
-    const unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
+    const unsubscribeTransactions = onSnapshot(transactionsQuery, async (snapshot) => {
       const transactionsData: Transaction[] = []
-      snapshot.forEach((doc) => {
-        transactionsData.push({ id: doc.id, ...doc.data() } as Transaction)
-      })
+      
+      // Process each transaction and fetch user names
+      for (const docSnapshot of snapshot.docs) {
+        const transactionData = { id: docSnapshot.id, ...docSnapshot.data() } as Transaction
+        
+        // Fetch user names for better display
+        if (transactionData.fromUserId && transactionData.toUserId) {
+          try {
+            const [fromUserDoc, toUserDoc] = await Promise.all([
+              getDoc(doc(db, "users", transactionData.fromUserId)),
+              getDoc(doc(db, "users", transactionData.toUserId))
+            ])
+            
+            if (fromUserDoc.exists()) {
+              transactionData.fromUserName = fromUserDoc.data().name
+            }
+            if (toUserDoc.exists()) {
+              transactionData.toUserName = toUserDoc.data().name
+            }
+          } catch (error) {
+            console.error("Error fetching user names:", error)
+          }
+        } else if (transactionData.userId) {
+          // For single user transactions, fetch the user name
+          try {
+            const userDoc = await getDoc(doc(db, "users", transactionData.userId))
+            if (userDoc.exists()) {
+              transactionData.senderName = userDoc.data().name
+            }
+          } catch (error) {
+            console.error("Error fetching user name:", error)
+          }
+        }
+        
+        transactionsData.push(transactionData)
+      }
+      
       setTransactions(transactionsData)
     })
 
@@ -85,6 +124,8 @@ export function AdminPanel() {
     try {
       await signOut(auth)
       toast.success("Logged out successfully")
+      // Redirect to home page after logout
+      window.location.href = "/"
     } catch (error) {
       console.error("Error logging out:", error)
       toast.error("Failed to log out")
@@ -108,6 +149,30 @@ export function AdminPanel() {
     })
   }
 
+  const getTransactionDisplayInfo = (transaction: Transaction) => {
+    // For P2P transfers
+    if (transaction.fromUserId && transaction.toUserId && transaction.fromUserName && transaction.toUserName) {
+      return {
+        userDisplay: `${transaction.fromUserName} → ${transaction.toUserName}`,
+        description: `Transfer from ${transaction.fromUserName} to ${transaction.toUserName}`
+      }
+    }
+    
+    // For single user transactions
+    if (transaction.senderName) {
+      return {
+        userDisplay: transaction.senderName,
+        description: transaction.description
+      }
+    }
+    
+    // Fallback to finding user by ID
+    const user = users.find(u => u.id === transaction.userId)
+    return {
+      userDisplay: user?.name || "Unknown User",
+      description: transaction.description
+    }
+  }
   const totalUsers = users.length
   const activeUsers = users.filter(user => !user.isFrozen).length
   const frozenUsers = users.filter(user => user.isFrozen).length
@@ -266,13 +331,14 @@ export function AdminPanel() {
           <TabsContent value="transactions" className="space-y-6">
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="text-white">Recent Transactions</CardTitle>
+                <CardTitle className="text-white">Real-time Transaction History</CardTitle>
+                <p className="text-gray-400 text-sm">Live updates showing all user transactions with sender and recipient details</p>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow className="border-gray-700">
-                      <TableHead className="text-gray-400">User</TableHead>
+                      <TableHead className="text-gray-400">Users</TableHead>
                       <TableHead className="text-gray-400">Type</TableHead>
                       <TableHead className="text-gray-400">Amount</TableHead>
                       <TableHead className="text-gray-400">Description</TableHead>
@@ -281,11 +347,11 @@ export function AdminPanel() {
                   </TableHeader>
                   <TableBody>
                     {transactions.map((transaction) => {
-                      const user = users.find(u => u.id === transaction.userId)
+                      const displayInfo = getTransactionDisplayInfo(transaction)
                       return (
                         <TableRow key={transaction.id} className="border-gray-700">
                           <TableCell className="text-white font-medium">
-                            {user?.name || transaction.userName || "Unknown User"}
+                            {displayInfo.userDisplay}
                           </TableCell>
                           <TableCell>
                             <Badge 
@@ -300,7 +366,7 @@ export function AdminPanel() {
                           }`}>
                             {transaction.type === "credit" ? "+" : "-"}{formatCurrency(Math.abs(transaction.amount))}
                           </TableCell>
-                          <TableCell className="text-gray-300">{transaction.description}</TableCell>
+                          <TableCell className="text-gray-300">{displayInfo.description}</TableCell>
                           <TableCell className="text-gray-300">{formatDate(transaction.timestamp)}</TableCell>
                         </TableRow>
                       )
